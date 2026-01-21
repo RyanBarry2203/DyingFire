@@ -3,10 +3,126 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:DyingFire"
+        xmlns:vm="clr-namespace:DyingFire.ViewModels"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Dying Fire" Height="600" Width="800" 
+        Background="Black">
+
+    <!-- Connect to the ViewModel -->
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <!-- STYLE: This makes the Arrow Buttons look transparent/ghostly -->
+        <Style x:Key="ArrowButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#AA000000"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Width" Value="50"/>
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="25">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- STYLE: This makes the Quick Bar slots look like squares -->
+        <DataTemplate x:Key="QuickSlotTemplate">
+            <Border Width="60" Height="60" Margin="5" BorderBrush="White" BorderThickness="1" Background="#333">
+                <!-- If there is an image, it shows here. If not, it shows the name -->
+                <Grid>
+                    <TextBlock Text="{Binding Name}" Foreground="White" 
+                               VerticalAlignment="Center" HorizontalAlignment="Center" 
+                               TextWrapping="Wrap" FontSize="10"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <!-- MAIN LAYOUT GRID -->
     <Grid>
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <!-- Top: Roaming Area (Takes remaining space) -->
+            <RowDefinition Height="100"/>
+            <!-- Bottom: HUD (Fixed height) -->
+        </Grid.RowDefinitions>
+
+        <!-- SECTION 1: ROAMING AREA (Top) -->
+        <Grid Grid.Row="0">
+            <!-- The Background Image of the Room -->
+            <!-- FallbackValue makes it gray if image is missing so you can see it -->
+            <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="UniformToFill"/>
+
+            <!-- Navigation Arrows Overlay -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- UP ARROW (Move Forward) -->
+                <Button Grid.Row="0" Grid.Column="1" Content="▲" Style="{StaticResource ArrowButtonStyle}" Click="MoveNorth_Click"/>
+
+                <!-- LEFT ARROW (Turn Left) -->
+                <Button Grid.Row="1" Grid.Column="0" Content="◀" Style="{StaticResource ArrowButtonStyle}" Click="MoveWest_Click"/>
+
+                <!-- RIGHT ARROW (Turn Right) -->
+                <Button Grid.Row="1" Grid.Column="2" Content="▶" Style="{StaticResource ArrowButtonStyle}" Click="MoveEast_Click"/>
+
+                <!-- DOWN ARROW (Turn Back) -->
+                <Button Grid.Row="2" Grid.Column="1" Content="▼" Style="{StaticResource ArrowButtonStyle}" Click="MoveSouth_Click"/>
+            </Grid>
+        </Grid>
+
+        <!-- SECTION 2: HUD (Bottom) -->
+        <Border Grid.Row="1" Background="#222" BorderBrush="Gray" BorderThickness="0,2,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <!-- Character Face -->
+                    <ColumnDefinition Width="*"/>
+                    <!-- Quick Bar (Middle) -->
+                    <ColumnDefinition Width="100"/>
+                    <!-- Inventory Button -->
+                </Grid.ColumnDefinitions>
+
+                <!-- Character Portrait -->
+                <Border Grid.Column="0" Margin="10" BorderBrush="White" BorderThickness="1">
+                    <TextBlock Text="👤" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                </Border>
+
+                <!-- Quick Use Bar -->
+                <!-- ItemsControl automatically creates a box for every item in your list -->
+                <ItemsControl Grid.Column="1" ItemsSource="{Binding QuickBar}" ItemTemplate="{StaticResource QuickSlotTemplate}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+
+                <!-- Inventory Button -->
+                <Button Grid.Column="2" Content="I" FontSize="30" FontWeight="Bold" Background="Transparent" Foreground="White" BorderThickness="2" BorderBrush="White" Margin="10" Click="Inventory_Click"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
