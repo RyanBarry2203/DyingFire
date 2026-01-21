@@ -18,26 +18,10 @@ namespace DyingFire
         }
 
         // --- NAVIGATION BUTTONS ---
-        private void MoveNorth_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("You moved Forward.");
-            // Later we will add: _vm.Move("North");
-        }
-
-        private void MoveSouth_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("You moved Back.");
-        }
-
-        private void MoveWest_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("You turned Left.");
-        }
-
-        private void MoveEast_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("You turned Right.");
-        }
+        private void MoveNorth_Click(object sender, RoutedEventArgs e) { _vm.Move("North"); }
+        private void MoveSouth_Click(object sender, RoutedEventArgs e) { _vm.Move("South"); }
+        private void MoveWest_Click(object sender, RoutedEventArgs e) { _vm.Move("West"); }
+        private void MoveEast_Click(object sender, RoutedEventArgs e) { _vm.Move("East"); }
 
         // --- INVENTORY BUTTON ---
         private void Inventory_Click(object sender, RoutedEventArgs e)
