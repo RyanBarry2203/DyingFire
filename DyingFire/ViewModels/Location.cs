@@ -8,6 +8,7 @@ namespace DyingFire.Models
         public string Description { get; set; }
 
         public ObservableCollection<GameItem> RoomItems { get; set; }
+        public ObservableCollection<InteractableObject> Interactables { get; set; }
 
         // Navigation IDs. 
         // If ID is -1, it means you can't go that way (the arrow will be hidden).
@@ -23,6 +24,9 @@ namespace DyingFire.Models
             ID = id;
             ImagePath = imagePath;
             Description = desc;
+
+            RoomItems = new ObservableCollection<GameItem>();
+            Interactables = new ObservableCollection<InteractableObject>();
         }
     }
 }

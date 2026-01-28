@@ -63,7 +63,19 @@ namespace DyingFire.ViewModels
             CurrentLocation = room1;
 
             // Add dummy key
-            QuickBar.Add(new GameItem { Name = "Rusty Key", Type = ItemType.Key, Description = "An old key covered in rust. I wonder if it still works" });
+            //QuickBar.Add(new GameItem { Name = "Rusty Key", Type = ItemType.Key, Description = "An old key covered in rust. I wonder if it still works" });
+
+            var chest = new InteractableObject { Name = "Old Chest", X = 350, Y = 400, Width = 150, Height = 100 };
+
+            chest.ItemsInside.Add(new GameItem
+            {
+                Name = "Rusty Key",
+                Type = ItemType.Key,
+                Description = "An old key covered in rust. I wonder if it still works",
+                //ImagePath = "/Assets/Images/rusty_key.png"
+            });
+
+            room1.Interactables.Add(chest);
         }
 
         // --- MOVEMENT LOGIC ---

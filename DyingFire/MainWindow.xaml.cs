@@ -28,5 +28,29 @@ namespace DyingFire
         {
             MessageBox.Show("Opening Inventory...");
         }
+        private void Interactable_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as FrameworkElement;
+            var obj = button.DataContext as DyingFire.Models.InteractableObject;
+
+            if (obj != null)
+            {
+                if (obj.ItemsInside.Count > 0)
+                {
+                    MessageBox.Show($"You searched the {obj.Name} and found items!");
+
+                    foreach (var item in obj.ItemsInside)
+                    {
+                        _vm.CurrentLocation.RoomItems.Add(item);
+                    }
+
+                    obj.ItemsInside.Clear();
+                }
+                else
+                {
+                    MessageBox.Show($"The {obj.Name} is empty.");
+                }
+            }
+        }
     }
 }

@@ -66,7 +66,33 @@
             <!-- FallbackValue makes it gray if image is missing so you can see it -->
             <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="UniformToFill"/>
 
-            <!-- Navigation Arrows Overlay -->
+            <ItemsControl ItemsSource="{Binding CurrentLocation.Interactables}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType= "ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                        <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Width="{Binding Width}"
+                                Height="{Binding Height}"
+                                Background="Transparent"
+                                BorderBrush="Red"
+                                BorderThickness="1"
+                                Cursor="Hand"
+                                ToolTip="Search"
+                                Click="Interactable_Click"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                    <!-- Navigation Arrows Overlay -->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
