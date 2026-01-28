@@ -65,7 +65,7 @@ namespace DyingFire.ViewModels
             // Add dummy key
             //QuickBar.Add(new GameItem { Name = "Rusty Key", Type = ItemType.Key, Description = "An old key covered in rust. I wonder if it still works" });
 
-            var chest = new InteractableObject { Name = "Old Chest", X = 350, Y = 400, Width = 150, Height = 100 };
+            var chest = new InteractableObject { Name = "Old Chest", X = 400, Y = 365, Width = 150, Height = 100 };
 
             chest.ItemsInside.Add(new GameItem
             {

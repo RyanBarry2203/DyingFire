@@ -22,6 +22,7 @@ namespace DyingFire.Models
             {
                 _isSelected = value;
                 OnPropertyChanged(); // Updates the UI border automatically
+                OnPropertyChanged("BorderColor");
             }
         }
 

@@ -154,6 +154,10 @@
     <Folder Include="Services\" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Images\stylized_wood.png" />
+    <Resource Include="Assets\Images\wooden_texture.png" />
+    <Resource Include="Assets\Images\cursor_gauntlet.png" />
+    <Resource Include="Assets\Images\gold_frame.png" />
     <Content Include="Assets\Images\hallway.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

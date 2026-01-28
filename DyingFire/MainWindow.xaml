@@ -1,192 +1,272 @@
 ﻿<Window x:Class="DyingFire.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:DyingFire.ViewModels"
-        mc:Ignorable="d"
-        Title="Dying Fire" Height="600" Width="800" 
-        Background="Black">
+        Title="Dying Fire" Height="720" Width="1080" 
+        Background="Black"
+        Cursor="None"
+        FontFamily="Gabriola">
 
-    <!-- Connect to the ViewModel -->
     <Window.DataContext>
         <vm:MainViewModel/>
     </Window.DataContext>
 
     <Window.Resources>
-        <!-- STYLE: This makes the Arrow Buttons look transparent/ghostly -->
-        <Style x:Key="ArrowButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#AA000000"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="20"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Width" Value="50"/>
-            <Setter Property="Height" Value="50"/>
-            <Setter Property="BorderThickness" Value="2"/>
-            <Setter Property="BorderBrush" Value="White"/>
+        <ImageBrush x:Key="WoodBrush" ImageSource="/Assets/Images/stylized_wood.png" TileMode="Tile" Viewport="0,0,100,100" ViewportUnits="Absolute"/>
+
+        <LinearGradientBrush x:Key="RoyalGoldBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#FFED8A" Offset="0.0"/>
+            <GradientStop Color="#D4AF37" Offset="0.4"/>
+            <GradientStop Color="#AA8822" Offset="0.6"/>
+            <GradientStop Color="#FFED8A" Offset="1.0"/>
+        </LinearGradientBrush>
+
+        <DropShadowEffect x:Key="GoldGlow" Color="#FFD700" BlurRadius="8" ShadowDepth="0" Opacity="0.6"/>
+
+        <SolidColorBrush x:Key="SlotBackground" Color="#88000000"/>
+
+        <Style x:Key="RpgBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="#FFED8A"/>
+            <Setter Property="FontFamily" Value="Gabriola"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="{TemplateBinding BorderThickness}" 
-                                CornerRadius="25">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
+                        <Grid>
+                            <Border x:Name="border" 
+                                    Background="{StaticResource SlotBackground}" 
+                                    BorderBrush="{StaticResource RoyalGoldBrush}" 
+                                    BorderThickness="2" 
+                                    CornerRadius="3">
+                            </Border>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#44D4AF37"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Effect" Value="{StaticResource GoldGlow}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
-        <!-- STYLE: This makes the Quick Bar slots look like squares -->
-        <DataTemplate x:Key="QuickSlotTemplate">
-            <Border Width="60" Height="60" Margin="5" BorderBrush="White" BorderThickness="1" Background="#333">
-                <!-- If there is an image, it shows here. If not, it shows the name -->
+        <Style x:Key="NavOrb" TargetType="Button">
+            <Setter Property="Width" Value="50"/>
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Ellipse Fill="{StaticResource SlotBackground}" Stroke="{StaticResource RoyalGoldBrush}" StrokeThickness="2"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.Foreground="#FFED8A" TextBlock.FontSize="28"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Effect" Value="{StaticResource GoldGlow}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="VisibleSlotTemplate">
+            <Button Click="QuickSlot_Click" Background="Transparent" BorderThickness="0" Margin="5" Cursor="Hand">
                 <Grid>
-                    <TextBlock Text="{Binding Name}" Foreground="White" 
-                               VerticalAlignment="Center" HorizontalAlignment="Center" 
-                               TextWrapping="Wrap" FontSize="10"/>
+                    <Border Width="60" Height="60" 
+                            Background="{StaticResource SlotBackground}" 
+                            BorderBrush="{StaticResource RoyalGoldBrush}" 
+                            BorderThickness="2" 
+                            CornerRadius="2">
+
+                        <TextBlock Text="{Binding Name}" 
+                                   Foreground="#DDD" 
+                                   FontFamily="Palatino Linotype" 
+                                   FontSize="10" 
+                                   TextWrapping="Wrap" 
+                                   TextAlignment="Center" 
+                                   VerticalAlignment="Center" 
+                                   HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <Border x:Name="SelectBorder" BorderThickness="2" BorderBrush="Transparent" CornerRadius="2"/>
                 </Grid>
-            </Border>
+            </Button>
         </DataTemplate>
+
     </Window.Resources>
 
-    <!-- MAIN LAYOUT GRID -->
-    <Grid>
+    <Grid MouseMove="Grid_MouseMove">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <!-- Top: Roaming Area (Takes remaining space) -->
-            <RowDefinition Height="100"/>
-            <!-- Bottom: HUD (Fixed height) -->
+            <RowDefinition Height="140"/>
         </Grid.RowDefinitions>
 
-        <!-- SECTION 1: ROAMING AREA (Top) -->
-        <Grid Grid.Row="0" Background="Black">
-            
+        <Grid Grid.Row="0">
             <Viewbox Stretch="Uniform">
+                <Grid Width="900" Height="550">
+                    <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="UniformToFill"/>
 
-                <Grid Width="800" Height="500">
-                    <!-- The Background Image of the Room -->
-            <!-- FallbackValue makes it gray if image is missing so you can see it -->
-            <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="Fill"/>
+                    <Border BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" IsHitTestVisible="False">
+                        <Border.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="20"/>
+                        </Border.Effect>
+                    </Border>
 
-            <ItemsControl ItemsSource="{Binding CurrentLocation.Interactables}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <Canvas/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemContainerStyle>
-                    <Style TargetType= "ContentPresenter">
-                        <Setter Property="Canvas.Left" Value="{Binding X}"/>
-                        <Setter Property="Canvas.Top" Value="{Binding Y}"/>
-                    </Style>
-                </ItemsControl.ItemContainerStyle>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Width="{Binding Width}"
-                                Height="{Binding Height}"
-                                Background="Transparent"
-                                BorderBrush="Red"
-                                BorderThickness="1"
-                                Cursor="Hand"
-                                ToolTip="Search"
-                                Click="Interactable_Click"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding CurrentLocation.Interactables}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                                <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Width="{Binding Width}" Height="{Binding Height}" Opacity="0" Cursor="Hand" Click="Interactable_Click"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                    <!-- Navigation Arrows Overlay -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Content="▲" Style="{StaticResource NavOrb}" Click="MoveNorth_Click"/>
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Content="▼" Style="{StaticResource NavOrb}" Click="MoveSouth_Click"/>
+                    <Button HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="◀" Style="{StaticResource NavOrb}" Click="MoveWest_Click"/>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="▶" Style="{StaticResource NavOrb}" Click="MoveEast_Click"/>
 
-                <!-- UP ARROW (Move Forward) -->
-                <Button Grid.Row="0" Grid.Column="1" Content="▲" Style="{StaticResource ArrowButtonStyle}" Click="MoveNorth_Click"/>
-
-                <!-- LEFT ARROW (Turn Left) -->
-                <Button Grid.Row="1" Grid.Column="0" Content="◀" Style="{StaticResource ArrowButtonStyle}" Click="MoveWest_Click"/>
-
-                <!-- RIGHT ARROW (Turn Right) -->
-                <Button Grid.Row="1" Grid.Column="2" Content="▶" Style="{StaticResource ArrowButtonStyle}" Click="MoveEast_Click"/>
-
-                <!-- DOWN ARROW (Turn Back) -->
-                <Button Grid.Row="2" Grid.Column="1" Content="▼" Style="{StaticResource ArrowButtonStyle}" Click="MoveSouth_Click"/>
-            </Grid>
+                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
+                        <ListBox ItemsSource="{Binding CurrentLocation.RoomItems}" Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Name}" Click="RoomItem_Click" Style="{StaticResource RpgBtn}" FontSize="18" Margin="0,4"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Grid>
+            </Viewbox>
         </Grid>
 
-        <!-- SECTION 2: HUD (Bottom) -->
-        <Border Grid.Row="1" Background="#222" BorderBrush="Gray" BorderThickness="0,2,0,0">
-            <Grid>
+        <Border Grid.Row="1" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="0,2,0,0">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Direction="90" ShadowDepth="5" BlurRadius="20"/>
+            </Border.Effect>
+
+            <Grid Margin="20,10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100"/>
-                    <!-- Character Face -->
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="200"/>
                     <ColumnDefinition Width="*"/>
-                    <!-- Quick Bar (Middle) -->
-                    <ColumnDefinition Width="100"/>
-                    <!-- Inventory Button -->
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Character Portrait -->
-                <Border Grid.Column="0" Margin="10" BorderBrush="White" BorderThickness="1">
-                    <TextBlock Text="👤" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                <Border Grid.Column="0" Width="90" Height="90" CornerRadius="50" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" Background="Black" Margin="0,0,20,0">
+                    <TextBlock Text="👤" Foreground="#555" FontSize="45" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
 
-                <!-- Quick Use Bar -->
-                <!-- ItemsControl automatically creates a box for every item in your list -->
-                <ItemsControl Grid.Column="1" ItemsSource="{Binding QuickBar}" ItemTemplate="{StaticResource QuickSlotTemplate}" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Health" Foreground="#FFED8A" FontSize="22"/>
+                    <Border BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="1" Height="12" CornerRadius="2" Background="#33000000">
+                        <ProgressBar Value="75" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="#8B0000"/>
+                    </Border>
 
-                <!-- Inventory Button -->
-                <Button Grid.Column="2" Content="I" FontSize="30" FontWeight="Bold" Background="Transparent" Foreground="White" BorderThickness="2" BorderBrush="White" Margin="10" Click="Inventory_Click"/>
+                    <TextBlock Text="Sanity" Foreground="#FFED8A" FontSize="22" Margin="0,8,0,0"/>
+                    <Border BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="1" Height="12" CornerRadius="2" Background="#33000000">
+                        <ProgressBar Value="40" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="#1E88E5"/>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="~" Foreground="{StaticResource RoyalGoldBrush}" FontSize="30" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                    <ItemsControl ItemsSource="{Binding QuickBar}" ItemTemplate="{StaticResource VisibleSlotTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <TextBlock Text="~" Foreground="{StaticResource RoyalGoldBrush}" FontSize="30" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="5" Content="Inventory" Width="120" Height="45" Style="{StaticResource RpgBtn}" Click="Inventory_Click"/>
             </Grid>
         </Border>
-                <Grid x:Name="InventoryScreen" Grid.Row="0" Grid.RowSpan="2" Background="#EE000000" Visibility="Collapsed">
 
-                    <Border BorderBrush="White" BorderThickness="2" Width="600" Height="400" Background="#111">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="50"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="50"/>
-                            </Grid.RowDefinitions>
+        <Grid x:Name="InventoryScreen" Visibility="Collapsed" Panel.ZIndex="2000" Background="#AA000000">
+            <Border Width="600" Height="450" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" CornerRadius="5">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="40"/>
+                </Border.Effect>
+                <Grid>
+                    <Border Background="#88000000" CornerRadius="3" Margin="2"/>
 
-                            <TextBlock Text="INVENTORY" Foreground="White" FontSize="30" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Grid Margin="30">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                            <ListBox Grid.Row="1" ItemSource="{Bidning QuickBar}" Background="Transparent" BorderThickness="0" Margin="20">
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel IsItemHost="True"/>
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
+                        <TextBlock Text="- Backpack -" Foreground="#FFED8A" FontSize="40" HorizontalAlignment="Center" Effect="{StaticResource GoldGlow}"/>
 
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Width="80" Height="80" Margin="10" BorderBrush="Gray" BorderThickness="1" Background="#222">
-                                            <StackPanel VerticalAlignment="Center">
+                        <ListBox Grid.Row="1" ItemsSource="{Binding QuickBar}" Background="Transparent" BorderThickness="0" Margin="0,20">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel HorizontalAlignment="Center"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="80" Height="80" Margin="10" Background="{StaticResource SlotBackground}" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" CornerRadius="3">
+                                        <TextBlock Text="{Binding Name}" Foreground="#CCC" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontFamily="Palatino Linotype"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
 
-                                                <TextBlock Text="{Binding Name}" Foreground="White" TextWrapping="Wrap" TextAlignment="Center"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-
-                            <Button Grid.Row="2" Content="CLOSE" Width="100" Height="30" Click="Inventory_Click"/>
-                            </Grid>
-                        </Border>
+                        <Button Grid.Row="2" Content="Close" Width="140" Height="45" Style="{StaticResource RpgBtn}" Click="Inventory_Click"/>
+                    </Grid>
                 </Grid>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="GamePopup" Visibility="Collapsed" Panel.ZIndex="3000" Background="#99000000">
+            <Border Width="450" Height="250" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" CornerRadius="5">
+                <Grid>
+                    <Border Background="#CC000000" CornerRadius="3" Margin="2"/>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
+                        <TextBlock x:Name="PopupTitle" Text="Found" Foreground="#FFED8A" FontSize="36" HorizontalAlignment="Center" Effect="{StaticResource GoldGlow}"/>
+
+                        <Border Height="2" Width="150" Background="{StaticResource RoyalGoldBrush}" Margin="0,5,0,15" Opacity="0.5"/>
+
+                        <TextBlock x:Name="PopupMessage" Text="..." Foreground="#EEE" FontSize="22" FontFamily="Palatino Linotype" TextWrapping="Wrap" TextAlignment="Center"/>
+
+                        <Button Content="Continue" Width="130" Height="40" Style="{StaticResource RpgBtn}" Click="ClosePopup_Click" Margin="0,25,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Image x:Name="CustomCursor" Source="/Assets/Images/cursor_gauntlet.png" 
+               Width="64" Height="64" 
+               HorizontalAlignment="Left" VerticalAlignment="Top" 
+               IsHitTestVisible="False" Panel.ZIndex="9999">
+            <Image.Effect>
+                <DropShadowEffect Color="Black" BlurRadius="5" ShadowDepth="2"/>
+            </Image.Effect>
+        </Image>
+
+    </Grid>
 </Window>
