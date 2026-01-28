@@ -15,24 +15,17 @@
         <ImageBrush x:Key="WoodBrush" ImageSource="/Assets/Images/stylized_wood.png" TileMode="Tile" Viewport="0,0,100,100" ViewportUnits="Absolute" Opacity="0.6"/>
 
         <LinearGradientBrush x:Key="BronzeBorderBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#E6C898" Offset="0.0"/>
-            <GradientStop Color="#B38B54" Offset="0.4"/>
-            <GradientStop Color="#684824" Offset="0.7"/>
-            <GradientStop Color="#E6C898" Offset="1.0"/>
-        </LinearGradientBrush>
+            <GradientStop Color="#E6C898" Offset="0.0"/> <GradientStop Color="#B38B54" Offset="0.4"/> <GradientStop Color="#684824" Offset="0.7"/> <GradientStop Color="#E6C898" Offset="1.0"/> </LinearGradientBrush>
 
-        <SolidColorBrush x:Key="BoneBrush" Color="#C8C0B0"/>
-        <SolidColorBrush x:Key="BloodBrush" Color="#660000"/>
-        <SolidColorBrush x:Key="SanityBrush" Color="#2A3D45"/>
-        <DropShadowEffect x:Key="GhostGlow" Color="#C8C0B0" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
-
-        <SolidColorBrush x:Key="SlotBackground" Color="#D9080808"/>
+        <SolidColorBrush x:Key="BoneBrush" Color="#C8C0B0"/> <SolidColorBrush x:Key="BloodBrush" Color="#660000"/> <SolidColorBrush x:Key="SanityBrush" Color="#2A3D45"/> <DropShadowEffect x:Key="GhostGlow" Color="#C8C0B0" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
+        
+        <SolidColorBrush x:Key="SlotBackground" Color="#D9080808"/> 
 
         <Style x:Key="HorrorBtn" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource BoneBrush}"/>
             <Setter Property="FontFamily" Value="Gabriola"/>
             <Setter Property="FontSize" Value="24"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Cursor" Value="None"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -61,7 +54,7 @@
         <Style x:Key="BronzeOrb" TargetType="Button">
             <Setter Property="Width" Value="50"/>
             <Setter Property="Height" Value="50"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Cursor" Value="None"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -81,14 +74,14 @@
         </Style>
 
         <DataTemplate x:Key="GrimSlotTemplate">
-            <Button Click="QuickSlot_Click" Background="Transparent" BorderThickness="0" Margin="6" Cursor="Hand">
+            <Button Click="QuickSlot_Click" Background="Transparent" BorderThickness="0" Margin="6" Cursor="None">
                 <Grid>
                     <Border Width="60" Height="60" 
                             Background="{StaticResource SlotBackground}" 
                             BorderBrush="{StaticResource BronzeBorderBrush}" 
                             BorderThickness="1" 
                             CornerRadius="2">
-
+                        
                         <TextBlock Text="{Binding Name}" 
                                    Foreground="#999" 
                                    FontFamily="Palatino Linotype" 
@@ -99,7 +92,7 @@
                                    HorizontalAlignment="Center"
                                    Opacity="0.7"/>
                     </Border>
-
+                    
                     <Border x:Name="SelectBorder" BorderThickness="1" BorderBrush="Transparent" CornerRadius="2"/>
                 </Grid>
             </Button>
@@ -116,7 +109,7 @@
         <Grid Grid.Row="0">
             <Viewbox Stretch="Uniform">
                 <Grid Width="900" Height="550">
-
+                    
                     <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="UniformToFill"/>
 
                     <Border BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="3" IsHitTestVisible="False">
@@ -139,7 +132,7 @@
                         </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Width="{Binding Width}" Height="{Binding Height}" Opacity="0" Cursor="Hand" Click="Interactable_Click"/>
+                                <Button Width="{Binding Width}" Height="{Binding Height}" Opacity="0" Cursor="None" Click="Interactable_Click"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -169,17 +162,17 @@
 
             <Grid>
                 <Border Background="{StaticResource WoodBrush}"/>
-
+                
                 <Border Background="#CC050505"/>
 
                 <Grid Margin="20,10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="220"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/> 
+                        <ColumnDefinition Width="220"/>  
+                        <ColumnDefinition Width="*"/>    
+                        <ColumnDefinition Width="Auto"/> 
+                        <ColumnDefinition Width="*"/>    
+                        <ColumnDefinition Width="Auto"/> 
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0" Width="85" Height="85" CornerRadius="50" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="1" Background="#080808" Margin="0,0,20,0">
@@ -219,7 +212,7 @@
             <Border Width="600" Height="450" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
                 <Grid>
                     <Border Background="#DD050505" CornerRadius="3"/>
-
+                    
                     <Grid Margin="30">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -256,11 +249,11 @@
                     <Border Background="#EE050505" CornerRadius="3"/>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
                         <TextBlock x:Name="PopupTitle" Text="Found" Foreground="{StaticResource BoneBrush}" FontSize="32" HorizontalAlignment="Center" Opacity="0.9"/>
-
+                        
                         <Border Height="1" Width="150" Background="{StaticResource BronzeBorderBrush}" Margin="0,5,0,15" Opacity="0.6"/>
-
+                        
                         <TextBlock x:Name="PopupMessage" Text="..." Foreground="#AAA" FontSize="20" FontFamily="Palatino Linotype" TextWrapping="Wrap" TextAlignment="Center"/>
-
+                        
                         <Button Content="Continue" Width="130" Height="40" Style="{StaticResource HorrorBtn}" Click="ClosePopup_Click" Margin="0,25,0,0"/>
                     </StackPanel>
                 </Grid>
@@ -268,7 +261,8 @@
         </Grid>
 
         <Image x:Name="CustomCursor" Source="/Assets/Images/cursor_gauntlet.png" 
-               Width="64" Height="64" 
+               Grid.RowSpan="2"
+               Width="80" Height="80" 
                HorizontalAlignment="Left" VerticalAlignment="Top" 
                IsHitTestVisible="False" Panel.ZIndex="9999">
             <Image.Effect>
