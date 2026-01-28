@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:DyingFire.ViewModels"
         Title="Dying Fire" Height="720" Width="1080" 
-        Background="Black"
+        Background="#050505"
         Cursor="None"
         FontFamily="Gabriola">
 
@@ -12,21 +12,24 @@
     </Window.DataContext>
 
     <Window.Resources>
-        <ImageBrush x:Key="WoodBrush" ImageSource="/Assets/Images/stylized_wood.png" TileMode="Tile" Viewport="0,0,100,100" ViewportUnits="Absolute"/>
+        <ImageBrush x:Key="WoodBrush" ImageSource="/Assets/Images/stylized_wood.png" TileMode="Tile" Viewport="0,0,100,100" ViewportUnits="Absolute" Opacity="0.6"/>
 
-        <LinearGradientBrush x:Key="RoyalGoldBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#FFED8A" Offset="0.0"/>
-            <GradientStop Color="#D4AF37" Offset="0.4"/>
-            <GradientStop Color="#AA8822" Offset="0.6"/>
-            <GradientStop Color="#FFED8A" Offset="1.0"/>
+        <LinearGradientBrush x:Key="BronzeBorderBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#E6C898" Offset="0.0"/>
+            <GradientStop Color="#B38B54" Offset="0.4"/>
+            <GradientStop Color="#684824" Offset="0.7"/>
+            <GradientStop Color="#E6C898" Offset="1.0"/>
         </LinearGradientBrush>
 
-        <DropShadowEffect x:Key="GoldGlow" Color="#FFD700" BlurRadius="8" ShadowDepth="0" Opacity="0.6"/>
+        <SolidColorBrush x:Key="BoneBrush" Color="#C8C0B0"/>
+        <SolidColorBrush x:Key="BloodBrush" Color="#660000"/>
+        <SolidColorBrush x:Key="SanityBrush" Color="#2A3D45"/>
+        <DropShadowEffect x:Key="GhostGlow" Color="#C8C0B0" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
 
-        <SolidColorBrush x:Key="SlotBackground" Color="#88000000"/>
+        <SolidColorBrush x:Key="SlotBackground" Color="#D9080808"/>
 
-        <Style x:Key="RpgBtn" TargetType="Button">
-            <Setter Property="Foreground" Value="#FFED8A"/>
+        <Style x:Key="HorrorBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource BoneBrush}"/>
             <Setter Property="FontFamily" Value="Gabriola"/>
             <Setter Property="FontSize" Value="24"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -36,17 +39,18 @@
                         <Grid>
                             <Border x:Name="border" 
                                     Background="{StaticResource SlotBackground}" 
-                                    BorderBrush="{StaticResource RoyalGoldBrush}" 
-                                    BorderThickness="2" 
-                                    CornerRadius="3">
+                                    BorderBrush="{StaticResource BronzeBorderBrush}" 
+                                    BorderThickness="1" 
+                                    CornerRadius="2">
                             </Border>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#44D4AF37"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#E6C898"/>
+                                <Setter TargetName="border" Property="Background" Value="#333"/>
                                 <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Effect" Value="{StaticResource GoldGlow}"/>
+                                <Setter Property="Effect" Value="{StaticResource GhostGlow}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -54,7 +58,7 @@
             </Setter>
         </Style>
 
-        <Style x:Key="NavOrb" TargetType="Button">
+        <Style x:Key="BronzeOrb" TargetType="Button">
             <Setter Property="Width" Value="50"/>
             <Setter Property="Height" Value="50"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -62,12 +66,13 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Ellipse Fill="{StaticResource SlotBackground}" Stroke="{StaticResource RoyalGoldBrush}" StrokeThickness="2"/>
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.Foreground="#FFED8A" TextBlock.FontSize="28"/>
+                            <Ellipse Fill="#EE000000" Stroke="{StaticResource BronzeBorderBrush}" StrokeThickness="2"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.Foreground="{StaticResource BoneBrush}" TextBlock.FontSize="28"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Effect" Value="{StaticResource GoldGlow}"/>
+                                <Setter Property="Effect" Value="{StaticResource GhostGlow}"/>
+                                <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -75,26 +80,27 @@
             </Setter>
         </Style>
 
-        <DataTemplate x:Key="VisibleSlotTemplate">
-            <Button Click="QuickSlot_Click" Background="Transparent" BorderThickness="0" Margin="5" Cursor="Hand">
+        <DataTemplate x:Key="GrimSlotTemplate">
+            <Button Click="QuickSlot_Click" Background="Transparent" BorderThickness="0" Margin="6" Cursor="Hand">
                 <Grid>
                     <Border Width="60" Height="60" 
                             Background="{StaticResource SlotBackground}" 
-                            BorderBrush="{StaticResource RoyalGoldBrush}" 
-                            BorderThickness="2" 
+                            BorderBrush="{StaticResource BronzeBorderBrush}" 
+                            BorderThickness="1" 
                             CornerRadius="2">
 
                         <TextBlock Text="{Binding Name}" 
-                                   Foreground="#DDD" 
+                                   Foreground="#999" 
                                    FontFamily="Palatino Linotype" 
                                    FontSize="10" 
                                    TextWrapping="Wrap" 
                                    TextAlignment="Center" 
                                    VerticalAlignment="Center" 
-                                   HorizontalAlignment="Center"/>
+                                   HorizontalAlignment="Center"
+                                   Opacity="0.7"/>
                     </Border>
 
-                    <Border x:Name="SelectBorder" BorderThickness="2" BorderBrush="Transparent" CornerRadius="2"/>
+                    <Border x:Name="SelectBorder" BorderThickness="1" BorderBrush="Transparent" CornerRadius="2"/>
                 </Grid>
             </Button>
         </DataTemplate>
@@ -110,11 +116,12 @@
         <Grid Grid.Row="0">
             <Viewbox Stretch="Uniform">
                 <Grid Width="900" Height="550">
+
                     <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="UniformToFill"/>
 
-                    <Border BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" IsHitTestVisible="False">
+                    <Border BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="3" IsHitTestVisible="False">
                         <Border.Effect>
-                            <DropShadowEffect Color="Black" BlurRadius="20"/>
+                            <DropShadowEffect Color="Black" BlurRadius="25"/>
                         </Border.Effect>
                     </Border>
 
@@ -137,16 +144,16 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Content="▲" Style="{StaticResource NavOrb}" Click="MoveNorth_Click"/>
-                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Content="▼" Style="{StaticResource NavOrb}" Click="MoveSouth_Click"/>
-                    <Button HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="◀" Style="{StaticResource NavOrb}" Click="MoveWest_Click"/>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="▶" Style="{StaticResource NavOrb}" Click="MoveEast_Click"/>
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Content="▲" Style="{StaticResource BronzeOrb}" Click="MoveNorth_Click"/>
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Content="▼" Style="{StaticResource BronzeOrb}" Click="MoveSouth_Click"/>
+                    <Button HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="◀" Style="{StaticResource BronzeOrb}" Click="MoveWest_Click"/>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="▶" Style="{StaticResource BronzeOrb}" Click="MoveEast_Click"/>
 
                     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
                         <ListBox ItemsSource="{Binding CurrentLocation.RoomItems}" Background="Transparent" BorderThickness="0">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Content="{Binding Name}" Click="RoomItem_Click" Style="{StaticResource RpgBtn}" FontSize="18" Margin="0,4"/>
+                                    <Button Content="{Binding Name}" Click="RoomItem_Click" Style="{StaticResource HorrorBtn}" FontSize="18" Margin="0,4"/>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
@@ -155,62 +162,63 @@
             </Viewbox>
         </Grid>
 
-        <Border Grid.Row="1" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="0,2,0,0">
+        <Border Grid.Row="1" Background="Black" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="0,2,0,0">
             <Border.Effect>
-                <DropShadowEffect Color="Black" Direction="90" ShadowDepth="5" BlurRadius="20"/>
+                <DropShadowEffect Color="Black" Direction="90" ShadowDepth="10" BlurRadius="30"/>
             </Border.Effect>
 
-            <Grid Margin="20,10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="200"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <Grid>
+                <Border Background="{StaticResource WoodBrush}"/>
 
-                <Border Grid.Column="0" Width="90" Height="90" CornerRadius="50" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" Background="Black" Margin="0,0,20,0">
-                    <TextBlock Text="👤" Foreground="#555" FontSize="45" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
+                <Border Background="#CC050505"/>
 
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="Health" Foreground="#FFED8A" FontSize="22"/>
-                    <Border BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="1" Height="12" CornerRadius="2" Background="#33000000">
-                        <ProgressBar Value="75" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="#8B0000"/>
+                <Grid Margin="20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Width="85" Height="85" CornerRadius="50" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="1" Background="#080808" Margin="0,0,20,0">
+                        <TextBlock Text="👤" Foreground="#333" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
 
-                    <TextBlock Text="Sanity" Foreground="#FFED8A" FontSize="22" Margin="0,8,0,0"/>
-                    <Border BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="1" Height="12" CornerRadius="2" Background="#33000000">
-                        <ProgressBar Value="40" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="#1E88E5"/>
-                    </Border>
-                </StackPanel>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Vitality" Foreground="{StaticResource BoneBrush}" FontSize="22" Opacity="0.8"/>
+                        <Border BorderBrush="#333" BorderThickness="1" Height="10" CornerRadius="1" Background="#111">
+                            <ProgressBar Value="75" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="{StaticResource BloodBrush}"/>
+                        </Border>
 
-                <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="~" Foreground="{StaticResource RoyalGoldBrush}" FontSize="30" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Text="Sanity" Foreground="{StaticResource BoneBrush}" FontSize="22" Margin="0,8,0,0" Opacity="0.8"/>
+                        <Border BorderBrush="#333" BorderThickness="1" Height="10" CornerRadius="1" Background="#111">
+                            <ProgressBar Value="40" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="{StaticResource SanityBrush}"/>
+                        </Border>
+                    </StackPanel>
 
-                    <ItemsControl ItemsSource="{Binding QuickBar}" ItemTemplate="{StaticResource VisibleSlotTemplate}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="~" Foreground="{StaticResource BronzeBorderBrush}" FontSize="30" VerticalAlignment="Center" Margin="0,0,10,0" Opacity="0.5"/>
+                        <ItemsControl ItemsSource="{Binding QuickBar}" ItemTemplate="{StaticResource GrimSlotTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <TextBlock Text="~" Foreground="{StaticResource BronzeBorderBrush}" FontSize="30" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.5"/>
+                    </StackPanel>
 
-                    <TextBlock Text="~" Foreground="{StaticResource RoyalGoldBrush}" FontSize="30" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                </StackPanel>
-
-                <Button Grid.Column="5" Content="Inventory" Width="120" Height="45" Style="{StaticResource RpgBtn}" Click="Inventory_Click"/>
+                    <Button Grid.Column="5" Content="Inventory" Width="120" Height="45" Style="{StaticResource HorrorBtn}" Click="Inventory_Click"/>
+                </Grid>
             </Grid>
         </Border>
 
-        <Grid x:Name="InventoryScreen" Visibility="Collapsed" Panel.ZIndex="2000" Background="#AA000000">
-            <Border Width="600" Height="450" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" CornerRadius="5">
-                <Border.Effect>
-                    <DropShadowEffect Color="Black" BlurRadius="40"/>
-                </Border.Effect>
+        <Grid x:Name="InventoryScreen" Visibility="Collapsed" Panel.ZIndex="2000" Background="#EE000000">
+            <Border Width="600" Height="450" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
                 <Grid>
-                    <Border Background="#88000000" CornerRadius="3" Margin="2"/>
+                    <Border Background="#DD050505" CornerRadius="3"/>
 
                     <Grid Margin="30">
                         <Grid.RowDefinitions>
@@ -219,7 +227,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Text="- Backpack -" Foreground="#FFED8A" FontSize="40" HorizontalAlignment="Center" Effect="{StaticResource GoldGlow}"/>
+                        <TextBlock Text="- Equipment -" Foreground="{StaticResource BoneBrush}" FontSize="36" HorizontalAlignment="Center" Opacity="0.9"/>
 
                         <ListBox Grid.Row="1" ItemsSource="{Binding QuickBar}" Background="Transparent" BorderThickness="0" Margin="0,20">
                             <ListBox.ItemsPanel>
@@ -229,31 +237,31 @@
                             </ListBox.ItemsPanel>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Width="80" Height="80" Margin="10" Background="{StaticResource SlotBackground}" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" CornerRadius="3">
-                                        <TextBlock Text="{Binding Name}" Foreground="#CCC" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontFamily="Palatino Linotype"/>
+                                    <Border Width="80" Height="80" Margin="10" Background="{StaticResource SlotBackground}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="1" CornerRadius="2">
+                                        <TextBlock Text="{Binding Name}" Foreground="#888" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontFamily="Palatino Linotype"/>
                                     </Border>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
 
-                        <Button Grid.Row="2" Content="Close" Width="140" Height="45" Style="{StaticResource RpgBtn}" Click="Inventory_Click"/>
+                        <Button Grid.Row="2" Content="Close" Width="140" Height="45" Style="{StaticResource HorrorBtn}" Click="Inventory_Click"/>
                     </Grid>
                 </Grid>
             </Border>
         </Grid>
 
-        <Grid x:Name="GamePopup" Visibility="Collapsed" Panel.ZIndex="3000" Background="#99000000">
-            <Border Width="450" Height="250" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource RoyalGoldBrush}" BorderThickness="2" CornerRadius="5">
+        <Grid x:Name="GamePopup" Visibility="Collapsed" Panel.ZIndex="3000" Background="#EE000000">
+            <Border Width="450" Height="250" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
                 <Grid>
-                    <Border Background="#CC000000" CornerRadius="3" Margin="2"/>
+                    <Border Background="#EE050505" CornerRadius="3"/>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
-                        <TextBlock x:Name="PopupTitle" Text="Found" Foreground="#FFED8A" FontSize="36" HorizontalAlignment="Center" Effect="{StaticResource GoldGlow}"/>
+                        <TextBlock x:Name="PopupTitle" Text="Found" Foreground="{StaticResource BoneBrush}" FontSize="32" HorizontalAlignment="Center" Opacity="0.9"/>
 
-                        <Border Height="2" Width="150" Background="{StaticResource RoyalGoldBrush}" Margin="0,5,0,15" Opacity="0.5"/>
+                        <Border Height="1" Width="150" Background="{StaticResource BronzeBorderBrush}" Margin="0,5,0,15" Opacity="0.6"/>
 
-                        <TextBlock x:Name="PopupMessage" Text="..." Foreground="#EEE" FontSize="22" FontFamily="Palatino Linotype" TextWrapping="Wrap" TextAlignment="Center"/>
+                        <TextBlock x:Name="PopupMessage" Text="..." Foreground="#AAA" FontSize="20" FontFamily="Palatino Linotype" TextWrapping="Wrap" TextAlignment="Center"/>
 
-                        <Button Content="Continue" Width="130" Height="40" Style="{StaticResource RpgBtn}" Click="ClosePopup_Click" Margin="0,25,0,0"/>
+                        <Button Content="Continue" Width="130" Height="40" Style="{StaticResource HorrorBtn}" Click="ClosePopup_Click" Margin="0,25,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>
