@@ -18,6 +18,20 @@ namespace DyingFire.Models
         public double Width { get; set; }
         public double Height { get; set; }
 
+        public bool _isLocked { get; set; }
+        public bool IsLocked
+        {
+            get { return _isLocked; }
+            set
+            {
+                _isLocked = value;
+                OnPropertyChanged(nameof(IsLocked));
+            }
+        }
+        public string RequiredItem { get; set; }
+        public string LockedMessage { get; set; } = "It's locked.";
+
+        public int TargetLocationID { get; set; } = 0; // 0 means no teleport
         public ObservableCollection<GameItem> ItemsInside { get; set; }
 
         public InteractableObject()

@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input; // Needed for Mouse Move
 using DyingFire.ViewModels;
 using DyingFire.Models;
+using System.Linq;
 
 namespace DyingFire
 {
@@ -33,6 +34,44 @@ namespace DyingFire
             else
             {
                 InventoryScreen.Visibility = Visibility.Visible;
+            }
+
+            var button = sender as FrameworkElement;
+            var obj = button.DataContext as InteractableObject;
+            if (obj == null) return;
+
+            if (obj.IsLocked)
+            {
+                var activeItem = _vm.QuickBar.FirstOrDefault(x => x != null && x.IsSelected);
+
+                if (activeItem != null && activeItem.Name == obj.RequiredItem)
+                {
+                    obj.IsLocked = false;
+                    ShowGameMessage("UNLOCKED", $"You used the {activeItem.Name} to unlock the {obj.Name}.");
+                }
+                else
+                {
+                    ShowGameMessage("LOCKED", obj.LockedMessage);
+                }
+                return;
+            }
+            if (obj.TargetLocationID > 0)
+            {
+                _vm.EnterLocation(obj.TargetLocationID);
+                return;
+            }
+            if (obj.ItemsInside.Count > 0)
+            {
+                ShowGameMessage("Searched", $"You found items in the {obj.Name}.");
+                foreach (var item in obj.ItemsInside)
+                {
+                    _vm.CurrentLocation.RoomItems.Add(item);
+                }
+                obj.ItemsInside.Clear();
+            }
+            else
+            {
+                ShowGameMessage("EMPTY", $"The {obj.Name} is empty.");
             }
         }
 

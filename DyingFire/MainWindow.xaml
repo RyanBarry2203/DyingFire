@@ -132,7 +132,7 @@
                         </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Width="{Binding Width}" Height="{Binding Height}" Opacity="0" Cursor="None" Click="Interactable_Click"/>
+                                <Button Width="{Binding Width}" Height="{Binding Height}" Background = "#33FF0000" BorderBrush="Red" BorderThickness="2" Cursor="None" Click="Interactable_Click"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

@@ -54,10 +54,18 @@ namespace DyingFire.ViewModels
             hallway.LocationToNorth = 3;    // Hallway -> Room 2
             room2.LocationToSouth = 2;      // Room 2 -> Hallway
 
+            var room4 = new Location(4, "/Assets/Images/room4.png", "Abandoned Library");
+            room4.LocationToWest = 2;      // Room 4 -> Hallway
+
+            hallway.LocationToEast = 4;    // Hallway -> Room 4
+            room4.LocationToWest = 3;
+
+
             // 3. Add to Map
             _allLocations.Add(room1);
             _allLocations.Add(hallway);
             _allLocations.Add(room2);
+            _allLocations.Add(room4);
 
             // 4. Start Game
             CurrentLocation = room1;
@@ -65,7 +73,11 @@ namespace DyingFire.ViewModels
             // Add dummy key
             //QuickBar.Add(new GameItem { Name = "Rusty Key", Type = ItemType.Key, Description = "An old key covered in rust. I wonder if it still works" });
 
-            var chest = new InteractableObject { Name = "Old Chest", X = 400, Y = 365, Width = 150, Height = 100 };
+            var door = new InteractableObject { Name = "Wooden Door", X = 400, Y = 150, Width = 180, Height = 250, IsLocked = true, RequiredItem = "Rusty Key", LockedMessage = "The door is locked, i wonder if that rusty key hole works?", TargetLocationID = 4};
+
+            hallway.Interactables.Add(door);
+
+            var chest = new InteractableObject { Name = "Old Chest", X = 425, Y = 400, Width = 200, Height = 100 };
 
             chest.ItemsInside.Add(new GameItem
             {
@@ -98,6 +110,11 @@ namespace DyingFire.ViewModels
                 var newRoom = _allLocations.FirstOrDefault(x => x.ID == newLocationID);
                 if (newRoom != null) CurrentLocation = newRoom;
             }
+        }
+        public void EnterLocation(int locationID)
+        {
+            var location = _allLocations.FirstOrDefault(x => x.ID == locationID);
+            if (location != null) CurrentLocation = location;
         }
     }
 }
