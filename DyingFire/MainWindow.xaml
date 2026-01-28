@@ -61,10 +61,14 @@
         </Grid.RowDefinitions>
 
         <!-- SECTION 1: ROAMING AREA (Top) -->
-        <Grid Grid.Row="0">
-            <!-- The Background Image of the Room -->
+        <Grid Grid.Row="0" Background="Black">
+            
+            <Viewbox Stretch="Uniform">
+
+                <Grid Width="800" Height="500">
+                    <!-- The Background Image of the Room -->
             <!-- FallbackValue makes it gray if image is missing so you can see it -->
-            <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="UniformToFill"/>
+            <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="Fill"/>
 
             <ItemsControl ItemsSource="{Binding CurrentLocation.Interactables}">
                 <ItemsControl.ItemsPanel>
@@ -150,5 +154,39 @@
                 <Button Grid.Column="2" Content="I" FontSize="30" FontWeight="Bold" Background="Transparent" Foreground="White" BorderThickness="2" BorderBrush="White" Margin="10" Click="Inventory_Click"/>
             </Grid>
         </Border>
-    </Grid>
+                <Grid x:Name="InventoryScreen" Grid.Row="0" Grid.RowSpan="2" Background="#EE000000" Visibility="Collapsed">
+
+                    <Border BorderBrush="White" BorderThickness="2" Width="600" Height="400" Background="#111">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="50"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="50"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="INVENTORY" Foreground="White" FontSize="30" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <ListBox Grid.Row="1" ItemSource="{Bidning QuickBar}" Background="Transparent" BorderThickness="0" Margin="20">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel IsItemHost="True"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="80" Height="80" Margin="10" BorderBrush="Gray" BorderThickness="1" Background="#222">
+                                            <StackPanel VerticalAlignment="Center">
+
+                                                <TextBlock Text="{Binding Name}" Foreground="White" TextWrapping="Wrap" TextAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Button Grid.Row="2" Content="CLOSE" Width="100" Height="30" Click="Inventory_Click"/>
+                            </Grid>
+                        </Border>
+                </Grid>
 </Window>

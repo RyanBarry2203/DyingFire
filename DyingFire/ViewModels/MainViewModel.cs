@@ -75,7 +75,7 @@ namespace DyingFire.ViewModels
                 //ImagePath = "/Assets/Images/rusty_key.png"
             });
 
-            room1.Interactables.Add(chest);
+            room2.Interactables.Add(chest);
         }
 
         // --- MOVEMENT LOGIC ---
