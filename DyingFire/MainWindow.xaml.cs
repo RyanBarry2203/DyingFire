@@ -101,22 +101,48 @@ namespace DyingFire
             var button = sender as FrameworkElement;
             var obj = button.DataContext as InteractableObject;
 
-            if (obj != null)
-            {
-                if (obj.ItemsInside.Count > 0)
-                {
-                    ShowGameMessage("SEARCHED", $"You searched the {obj.Name} and found items!");
+            if (obj == null) return;
 
-                    foreach (var item in obj.ItemsInside)
-                    {
-                        _vm.CurrentLocation.RoomItems.Add(item);
-                    }
-                    obj.ItemsInside.Clear();
+            // 1. CHECK IF LOCKED
+            if (obj.IsLocked)
+            {
+                // Find the selected key in the QuickBar
+                var activeItem = _vm.QuickBar.FirstOrDefault(x => x != null && x.IsSelected);
+
+                if (activeItem != null && activeItem.Name == obj.RequiredItem)
+                {
+                    obj.IsLocked = false;
+                    ShowGameMessage("UNLOCKED", $"You used the {activeItem.Name} to unlock the {obj.Name}.");
+                    // Optional: _vm.QuickBar[indexOfItem] = null; // Destroy key?
                 }
                 else
                 {
-                    ShowGameMessage("EMPTY", $"The {obj.Name} is empty.");
+                    ShowGameMessage("LOCKED", obj.LockedMessage);
                 }
+                return; // Stop here! Don't try to enter or search yet.
+            }
+
+            // 2. CHECK IF IT IS A DOOR (Unlocked)
+            if (obj.TargetLocationID > 0)
+            {
+                _vm.EnterLocation(obj.TargetLocationID);
+                return; // Stop here! You entered the room.
+            }
+
+            // 3. IF IT IS A CONTAINER (Chest/Pile)
+            if (obj.ItemsInside.Count > 0)
+            {
+                ShowGameMessage("SEARCHED", $"You searched the {obj.Name} and found items!");
+                foreach (var item in obj.ItemsInside)
+                {
+                    _vm.CurrentLocation.RoomItems.Add(item);
+                }
+                obj.ItemsInside.Clear();
+            }
+            else
+            {
+                // Only show "Empty" if it's not a door and has no items
+                ShowGameMessage("EMPTY", $"The {obj.Name} is empty.");
             }
         }
 
