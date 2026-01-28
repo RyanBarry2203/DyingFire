@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.Sqlite; // NEW NAMESPACE
+﻿//using Microsoft.Data.Sqlite; // NEW NAMESPACE
 using System.IO;
 
 namespace DyingFire.Services
@@ -23,23 +23,7 @@ namespace DyingFire.Services
             // so we don't need the "CreateFile" command anymore.
 
             // Note the spelling: SqliteConnection (Only 'S' is capital)
-            using (var connection = new SqliteConnection(ConnectionString))
-            {
-                connection.Open();
-
-                string createTableQuery = @"
-                    CREATE TABLE IF NOT EXISTS PlayerStats (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Level INTEGER,
-                        HellFlameAmount INTEGER,
-                        DateSaved TEXT
-                    )";
-
-                using (var command = new SqliteCommand(createTableQuery, connection))
-                {
-                    command.ExecuteNonQuery();
-                }
-            }
+            ?Zjkhdfksbsjk
         }
     }
 }

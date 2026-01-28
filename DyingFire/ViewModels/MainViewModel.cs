@@ -1,5 +1,5 @@
 ﻿using DyingFire.Models;
-using DyingFire.Services;
+//using DyingFire.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -10,7 +10,7 @@ namespace DyingFire.ViewModels
 {
     public class MainViewModel : ObservableObject
     {
-        private DatabaseService _dbService;
+        //private DatabaseService _dbService;
         private List<Location> _allLocations; // The Map
 
         // --- PROPERTIES ---
@@ -30,6 +30,11 @@ namespace DyingFire.ViewModels
 
             // _dbService = new DatabaseService(); // Database disabled for now
             QuickBar = new ObservableCollection<GameItem>();
+
+            for (int i = 0; i < 5; i++)
+            {
+                QuickBar.Add(null); // Initialize with empty slots
+            }
 
             LoadGameWorld();
         }
@@ -58,7 +63,7 @@ namespace DyingFire.ViewModels
             CurrentLocation = room1;
 
             // Add dummy key
-            QuickBar.Add(new GameItem { Name = "Rusty Key", Type = ItemType.Key });
+            QuickBar.Add(new GameItem { Name = "Rusty Key", Type = ItemType.Key, Description = "An old key covered in rust. I wonder if it still works" });
         }
 
         // --- MOVEMENT LOGIC ---
