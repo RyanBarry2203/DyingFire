@@ -112,8 +112,11 @@ namespace DyingFire
                 if (activeItem != null && activeItem.Name == obj.RequiredItem)
                 {
                     obj.IsLocked = false;
+                    _vm.CurrentLocation.LocationToEast = obj.TargetLocationID;
+                    _vm.CurrentLocation = _vm.CurrentLocation; // Refresh location to update UI
                     ShowGameMessage("UNLOCKED", $"You used the {activeItem.Name} to unlock the {obj.Name}.");
                     // Optional: _vm.QuickBar[indexOfItem] = null; // Destroy key?
+
                 }
                 else
                 {

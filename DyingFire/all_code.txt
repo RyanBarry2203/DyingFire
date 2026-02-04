@@ -1,0 +1,1627 @@
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
+
+namespace DyingFire
+{
+    /// <summary>
+    /// Interaction logic for App.xaml
+    /// </summary>
+    public partial class App : Application
+    {
+    }
+}
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input; // Needed for Mouse Move
+using DyingFire.ViewModels;
+using DyingFire.Models;
+using System.Linq;
+
+namespace DyingFire
+{
+    public partial class MainWindow : Window
+    {
+        private MainViewModel _vm;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            _vm = new MainViewModel();
+            this.DataContext = _vm;
+        }
+
+        // --- 1. MOVEMENT ---
+        private void MoveNorth_Click(object sender, RoutedEventArgs e) { _vm.Move("North"); }
+        private void MoveSouth_Click(object sender, RoutedEventArgs e) { _vm.Move("South"); }
+        private void MoveWest_Click(object sender, RoutedEventArgs e) { _vm.Move("West"); }
+        private void MoveEast_Click(object sender, RoutedEventArgs e) { _vm.Move("East"); }
+
+        // --- 2. INVENTORY TOGGLE ---
+        private void Inventory_Click(object sender, RoutedEventArgs e)
+        {
+            if (InventoryScreen.Visibility == Visibility.Visible)
+            {
+                InventoryScreen.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                InventoryScreen.Visibility = Visibility.Visible;
+            }
+
+            var button = sender as FrameworkElement;
+            var obj = button.DataContext as InteractableObject;
+            if (obj == null) return;
+
+            if (obj.IsLocked)
+            {
+                var activeItem = _vm.QuickBar.FirstOrDefault(x => x != null && x.IsSelected);
+
+                if (activeItem != null && activeItem.Name == obj.RequiredItem)
+                {
+                    obj.IsLocked = false;
+                    ShowGameMessage("UNLOCKED", $"You used the {activeItem.Name} to unlock the {obj.Name}.");
+                }
+                else
+                {
+                    ShowGameMessage("LOCKED", obj.LockedMessage);
+                }
+                return;
+            }
+            if (obj.TargetLocationID > 0)
+            {
+                _vm.EnterLocation(obj.TargetLocationID);
+                return;
+            }
+            if (obj.ItemsInside.Count > 0)
+            {
+                ShowGameMessage("Searched", $"You found items in the {obj.Name}.");
+                foreach (var item in obj.ItemsInside)
+                {
+                    _vm.CurrentLocation.RoomItems.Add(item);
+                }
+                obj.ItemsInside.Clear();
+            }
+            else
+            {
+                ShowGameMessage("EMPTY", $"The {obj.Name} is empty.");
+            }
+        }
+
+        // --- 3. CUSTOM CURSOR LOGIC ---
+        private void Grid_MouseMove(object sender, MouseEventArgs e)
+        {
+            Point p = e.GetPosition(this);
+            CustomCursor.Margin = new Thickness(p.X, p.Y, 0, 0);
+        }
+
+        // --- 4. POPUP SYSTEM ---
+        private void ShowGameMessage(string title, string message)
+        {
+            PopupTitle.Text = title;
+            PopupMessage.Text = message;
+            GamePopup.Visibility = Visibility.Visible;
+        }
+
+        private void ClosePopup_Click(object sender, RoutedEventArgs e)
+        {
+            GamePopup.Visibility = Visibility.Collapsed;
+        }
+
+        // --- 5. INTERACTION (SEARCHING) ---
+        private void Interactable_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as FrameworkElement;
+            var obj = button.DataContext as InteractableObject;
+
+            if (obj == null) return;
+
+            // 1. CHECK IF LOCKED
+            if (obj.IsLocked)
+            {
+                // Find the selected key in the QuickBar
+                var activeItem = _vm.QuickBar.FirstOrDefault(x => x != null && x.IsSelected);
+
+                if (activeItem != null && activeItem.Name == obj.RequiredItem)
+                {
+                    obj.IsLocked = false;
+                    ShowGameMessage("UNLOCKED", $"You used the {activeItem.Name} to unlock the {obj.Name}.");
+                    // Optional: _vm.QuickBar[indexOfItem] = null; // Destroy key?
+                }
+                else
+                {
+                    ShowGameMessage("LOCKED", obj.LockedMessage);
+                }
+                return; // Stop here! Don't try to enter or search yet.
+            }
+
+            // 2. CHECK IF IT IS A DOOR (Unlocked)
+            if (obj.TargetLocationID > 0)
+            {
+                _vm.EnterLocation(obj.TargetLocationID);
+                return; // Stop here! You entered the room.
+            }
+
+            // 3. IF IT IS A CONTAINER (Chest/Pile)
+            if (obj.ItemsInside.Count > 0)
+            {
+                ShowGameMessage("SEARCHED", $"You searched the {obj.Name} and found items!");
+                foreach (var item in obj.ItemsInside)
+                {
+                    _vm.CurrentLocation.RoomItems.Add(item);
+                }
+                obj.ItemsInside.Clear();
+            }
+            else
+            {
+                // Only show "Empty" if it's not a door and has no items
+                ShowGameMessage("EMPTY", $"The {obj.Name} is empty.");
+            }
+        }
+
+        // --- 6. LOOTING ITEMS ---
+        private void RoomItem_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as FrameworkElement;
+            var item = button.DataContext as GameItem;
+
+            if (item != null)
+            {
+                // Remove from floor
+                _vm.CurrentLocation.RoomItems.Remove(item);
+
+                // Add to first empty slot in QuickBar
+                for (int i = 0; i < _vm.QuickBar.Count; i++)
+                {
+                    if (_vm.QuickBar[i] == null)
+                    {
+                        _vm.QuickBar[i] = item;
+                        break;
+                    }
+                }
+
+                ShowGameMessage("ITEM FOUND", $"You picked up: {item.Name}");
+            }
+        }
+
+        // --- 7. QUICK SLOT (Highlight Item) ---
+        private void QuickSlot_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as FrameworkElement;
+            var item = button.DataContext as GameItem;
+
+            if (item != null)
+            {
+                foreach (var slotItem in _vm.QuickBar)
+                {
+                    if (slotItem != null) slotItem.IsSelected = false;
+                }
+                item.IsSelected = true;
+            }
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Collections.ObjectModel;
+using DyingFire.ViewModels;
+
+namespace DyingFire.Models
+{
+    public class InteractableObject : ObservableObject
+    {
+
+        public string Name { get; set; }
+
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+
+        public bool _isLocked { get; set; }
+        public bool IsLocked
+        {
+            get { return _isLocked; }
+            set
+            {
+                _isLocked = value;
+                OnPropertyChanged(nameof(IsLocked));
+            }
+        }
+        public string RequiredItem { get; set; }
+        public string LockedMessage { get; set; } = "It's locked.";
+
+        public int TargetLocationID { get; set; } = 0; // 0 means no teleport
+        public ObservableCollection<GameItem> ItemsInside { get; set; }
+
+        public InteractableObject()
+        {
+            ItemsInside = new ObservableCollection<GameItem>();
+        }
+    }
+}
+// <autogenerated />
+using System;
+using System.Reflection;
+[assembly: global::System.Runtime.Versioning.TargetFrameworkAttribute(".NETFramework,Version=v4.7.2", FrameworkDisplayName = ".NET Framework 4.7.2")]
+#pragma checksum "..\..\App.xaml" "{8829d00f-11b8-4213-878b-770e8597ac16}" "455E3EEA609C8E65CB917CB383FDE6C3D14D462A4BA1AE98378436D128375100"
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+using DyingFire;
+using System;
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
+using System.Windows.Media.TextFormatting;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Windows.Shell;
+
+
+namespace DyingFire {
+    
+    
+    /// <summary>
+    /// App
+    /// </summary>
+    public partial class App : System.Windows.Application {
+        
+        /// <summary>
+        /// InitializeComponent
+        /// </summary>
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        public void InitializeComponent() {
+            
+            #line 5 "..\..\App.xaml"
+            this.StartupUri = new System.Uri("MainWindow.xaml", System.UriKind.Relative);
+            
+            #line default
+            #line hidden
+        }
+        
+        /// <summary>
+        /// Application Entry Point.
+        /// </summary>
+        [System.STAThreadAttribute()]
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        public static void Main() {
+            DyingFire.App app = new DyingFire.App();
+            app.InitializeComponent();
+            app.Run();
+        }
+    }
+}
+
+#pragma checksum "..\..\App.xaml" "{8829d00f-11b8-4213-878b-770e8597ac16}" "455E3EEA609C8E65CB917CB383FDE6C3D14D462A4BA1AE98378436D128375100"
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+using DyingFire;
+using System;
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
+using System.Windows.Media.TextFormatting;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Windows.Shell;
+
+
+namespace DyingFire {
+    
+    
+    /// <summary>
+    /// App
+    /// </summary>
+    public partial class App : System.Windows.Application {
+        
+        /// <summary>
+        /// InitializeComponent
+        /// </summary>
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        public void InitializeComponent() {
+            
+            #line 5 "..\..\App.xaml"
+            this.StartupUri = new System.Uri("MainWindow.xaml", System.UriKind.Relative);
+            
+            #line default
+            #line hidden
+        }
+        
+        /// <summary>
+        /// Application Entry Point.
+        /// </summary>
+        [System.STAThreadAttribute()]
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        public static void Main() {
+            DyingFire.App app = new DyingFire.App();
+            app.InitializeComponent();
+            app.Run();
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("assets/images/hallway.png")]
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("assets/images/room1.png")]
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("assets/images/room2.png")]
+
+
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("assets/images/hallway.png")]
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("assets/images/room1.png")]
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("assets/images/room2.png")]
+
+
+
+
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+namespace XamlGeneratedNamespace {
+    
+    
+    /// <summary>
+    /// GeneratedInternalTypeHelper
+    /// </summary>
+    [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed class GeneratedInternalTypeHelper : System.Windows.Markup.InternalTypeHelper {
+        
+        /// <summary>
+        /// CreateInstance
+        /// </summary>
+        protected override object CreateInstance(System.Type type, System.Globalization.CultureInfo culture) {
+            return System.Activator.CreateInstance(type, ((System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic) 
+                            | (System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.CreateInstance)), null, null, culture);
+        }
+        
+        /// <summary>
+        /// GetPropertyValue
+        /// </summary>
+        protected override object GetPropertyValue(System.Reflection.PropertyInfo propertyInfo, object target, System.Globalization.CultureInfo culture) {
+            return propertyInfo.GetValue(target, System.Reflection.BindingFlags.Default, null, null, culture);
+        }
+        
+        /// <summary>
+        /// SetPropertyValue
+        /// </summary>
+        protected override void SetPropertyValue(System.Reflection.PropertyInfo propertyInfo, object target, object value, System.Globalization.CultureInfo culture) {
+            propertyInfo.SetValue(target, value, System.Reflection.BindingFlags.Default, null, null, culture);
+        }
+        
+        /// <summary>
+        /// CreateDelegate
+        /// </summary>
+        protected override System.Delegate CreateDelegate(System.Type delegateType, object target, string handler) {
+            return ((System.Delegate)(target.GetType().InvokeMember("_CreateDelegate", (System.Reflection.BindingFlags.InvokeMethod 
+                            | (System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)), null, target, new object[] {
+                        delegateType,
+                        handler}, null)));
+        }
+        
+        /// <summary>
+        /// AddEventHandler
+        /// </summary>
+        protected override void AddEventHandler(System.Reflection.EventInfo eventInfo, object target, System.Delegate handler) {
+            eventInfo.AddEventHandler(target, handler);
+        }
+    }
+}
+
+#pragma checksum "..\..\MainWindow.xaml" "{8829d00f-11b8-4213-878b-770e8597ac16}" "F0B36F91179D3A2BAB936E7CF6ECC265722D47CDE724609C6582B986210C41DE"
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+using DyingFire.ViewModels;
+using System;
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
+using System.Windows.Media.TextFormatting;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Windows.Shell;
+
+
+namespace DyingFire {
+    
+    
+    /// <summary>
+    /// MainWindow
+    /// </summary>
+    public partial class MainWindow : System.Windows.Window, System.Windows.Markup.IComponentConnector, System.Windows.Markup.IStyleConnector {
+        
+        
+        #line 211 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.Grid InventoryScreen;
+        
+        #line default
+        #line hidden
+        
+        
+        #line 246 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.Grid GamePopup;
+        
+        #line default
+        #line hidden
+        
+        
+        #line 251 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.TextBlock PopupTitle;
+        
+        #line default
+        #line hidden
+        
+        
+        #line 255 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.TextBlock PopupMessage;
+        
+        #line default
+        #line hidden
+        
+        
+        #line 263 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.Image CustomCursor;
+        
+        #line default
+        #line hidden
+        
+        private bool _contentLoaded;
+        
+        /// <summary>
+        /// InitializeComponent
+        /// </summary>
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        public void InitializeComponent() {
+            if (_contentLoaded) {
+                return;
+            }
+            _contentLoaded = true;
+            System.Uri resourceLocater = new System.Uri("/DyingFire;component/mainwindow.xaml", System.UriKind.Relative);
+            
+            #line 1 "..\..\MainWindow.xaml"
+            System.Windows.Application.LoadComponent(this, resourceLocater);
+            
+            #line default
+            #line hidden
+        }
+        
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        void System.Windows.Markup.IComponentConnector.Connect(int connectionId, object target) {
+            switch (connectionId)
+            {
+            case 2:
+            
+            #line 103 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Grid)(target)).MouseMove += new System.Windows.Input.MouseEventHandler(this.Grid_MouseMove);
+            
+            #line default
+            #line hidden
+            return;
+            case 4:
+            
+            #line 140 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.MoveNorth_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 5:
+            
+            #line 141 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.MoveSouth_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 6:
+            
+            #line 142 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.MoveWest_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 7:
+            
+            #line 143 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.MoveEast_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 9:
+            
+            #line 206 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.Inventory_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 10:
+            this.InventoryScreen = ((System.Windows.Controls.Grid)(target));
+            return;
+            case 11:
+            
+            #line 240 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.Inventory_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 12:
+            this.GamePopup = ((System.Windows.Controls.Grid)(target));
+            return;
+            case 13:
+            this.PopupTitle = ((System.Windows.Controls.TextBlock)(target));
+            return;
+            case 14:
+            this.PopupMessage = ((System.Windows.Controls.TextBlock)(target));
+            return;
+            case 15:
+            
+            #line 257 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.ClosePopup_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 16:
+            this.CustomCursor = ((System.Windows.Controls.Image)(target));
+            return;
+            }
+            this._contentLoaded = true;
+        }
+        
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        void System.Windows.Markup.IStyleConnector.Connect(int connectionId, object target) {
+            switch (connectionId)
+            {
+            case 1:
+            
+            #line 77 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.QuickSlot_Click);
+            
+            #line default
+            #line hidden
+            break;
+            case 3:
+            
+            #line 135 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.Interactable_Click);
+            
+            #line default
+            #line hidden
+            break;
+            case 8:
+            
+            #line 149 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.RoomItem_Click);
+            
+            #line default
+            #line hidden
+            break;
+            }
+        }
+    }
+}
+
+#pragma checksum "..\..\MainWindow.xaml" "{8829d00f-11b8-4213-878b-770e8597ac16}" "F0B36F91179D3A2BAB936E7CF6ECC265722D47CDE724609C6582B986210C41DE"
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+using DyingFire.ViewModels;
+using System;
+using System.Diagnostics;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Markup;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
+using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
+using System.Windows.Media.TextFormatting;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Windows.Shell;
+
+
+namespace DyingFire {
+    
+    
+    /// <summary>
+    /// MainWindow
+    /// </summary>
+    public partial class MainWindow : System.Windows.Window, System.Windows.Markup.IComponentConnector, System.Windows.Markup.IStyleConnector {
+        
+        
+        #line 211 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.Grid InventoryScreen;
+        
+        #line default
+        #line hidden
+        
+        
+        #line 246 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.Grid GamePopup;
+        
+        #line default
+        #line hidden
+        
+        
+        #line 251 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.TextBlock PopupTitle;
+        
+        #line default
+        #line hidden
+        
+        
+        #line 255 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.TextBlock PopupMessage;
+        
+        #line default
+        #line hidden
+        
+        
+        #line 263 "..\..\MainWindow.xaml"
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+        internal System.Windows.Controls.Image CustomCursor;
+        
+        #line default
+        #line hidden
+        
+        private bool _contentLoaded;
+        
+        /// <summary>
+        /// InitializeComponent
+        /// </summary>
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        public void InitializeComponent() {
+            if (_contentLoaded) {
+                return;
+            }
+            _contentLoaded = true;
+            System.Uri resourceLocater = new System.Uri("/DyingFire;component/mainwindow.xaml", System.UriKind.Relative);
+            
+            #line 1 "..\..\MainWindow.xaml"
+            System.Windows.Application.LoadComponent(this, resourceLocater);
+            
+            #line default
+            #line hidden
+        }
+        
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        void System.Windows.Markup.IComponentConnector.Connect(int connectionId, object target) {
+            switch (connectionId)
+            {
+            case 2:
+            
+            #line 103 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Grid)(target)).MouseMove += new System.Windows.Input.MouseEventHandler(this.Grid_MouseMove);
+            
+            #line default
+            #line hidden
+            return;
+            case 4:
+            
+            #line 140 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.MoveNorth_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 5:
+            
+            #line 141 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.MoveSouth_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 6:
+            
+            #line 142 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.MoveWest_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 7:
+            
+            #line 143 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.MoveEast_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 9:
+            
+            #line 206 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.Inventory_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 10:
+            this.InventoryScreen = ((System.Windows.Controls.Grid)(target));
+            return;
+            case 11:
+            
+            #line 240 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.Inventory_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 12:
+            this.GamePopup = ((System.Windows.Controls.Grid)(target));
+            return;
+            case 13:
+            this.PopupTitle = ((System.Windows.Controls.TextBlock)(target));
+            return;
+            case 14:
+            this.PopupMessage = ((System.Windows.Controls.TextBlock)(target));
+            return;
+            case 15:
+            
+            #line 257 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.ClosePopup_Click);
+            
+            #line default
+            #line hidden
+            return;
+            case 16:
+            this.CustomCursor = ((System.Windows.Controls.Image)(target));
+            return;
+            }
+            this._contentLoaded = true;
+        }
+        
+        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        void System.Windows.Markup.IStyleConnector.Connect(int connectionId, object target) {
+            switch (connectionId)
+            {
+            case 1:
+            
+            #line 77 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.QuickSlot_Click);
+            
+            #line default
+            #line hidden
+            break;
+            case 3:
+            
+            #line 135 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.Interactable_Click);
+            
+            #line default
+            #line hidden
+            break;
+            case 8:
+            
+            #line 149 "..\..\MainWindow.xaml"
+            ((System.Windows.Controls.Button)(target)).Click += new System.Windows.RoutedEventHandler(this.RoomItem_Click);
+            
+            #line default
+            #line hidden
+            break;
+            }
+        }
+    }
+}
+
+using System.Reflection;
+using System.Resources;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Windows;
+
+// General Information about an assembly is controlled through the following
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+[assembly: AssemblyTitle("DyingFire")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("DyingFire")]
+[assembly: AssemblyCopyright("Copyright ©  2026")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+
+// Setting ComVisible to false makes the types in this assembly not visible
+// to COM components.  If you need to access a type in this assembly from
+// COM, set the ComVisible attribute to true on that type.
+[assembly: ComVisible(false)]
+
+//In order to begin building localizable applications, set
+//<UICulture>CultureYouAreCodingWith</UICulture> in your .csproj file
+//inside a <PropertyGroup>.  For example, if you are using US english
+//in your source files, set the <UICulture> to en-US.  Then uncomment
+//the NeutralResourceLanguage attribute below.  Update the "en-US" in
+//the line below to match the UICulture setting in the project file.
+
+//[assembly: NeutralResourcesLanguage("en-US", UltimateResourceFallbackLocation.Satellite)]
+
+
+[assembly: ThemeInfo(
+    ResourceDictionaryLocation.None, //where theme specific resource dictionaries are located
+                                     //(used if a resource is not found in the page,
+                                     // or application resource dictionaries)
+    ResourceDictionaryLocation.SourceAssembly //where the generic resource dictionary is located
+                                              //(used if a resource is not found in the page,
+                                              // app, or any theme specific resource dictionaries)
+)]
+
+
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version
+//      Build Number
+//      Revision
+//
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+namespace DyingFire.Properties
+{
+
+
+    /// <summary>
+    ///   A strongly-typed resource class, for looking up localized strings, etc.
+    /// </summary>
+    // This class was auto-generated by the StronglyTypedResourceBuilder
+    // class via a tool like ResGen or Visual Studio.
+    // To add or remove a member, edit your .ResX file then rerun ResGen
+    // with the /str option, or rebuild your VS project.
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+    internal class Resources
+    {
+
+        private static global::System.Resources.ResourceManager resourceMan;
+
+        private static global::System.Globalization.CultureInfo resourceCulture;
+
+        [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+        internal Resources()
+        {
+        }
+
+        /// <summary>
+        ///   Returns the cached ResourceManager instance used by this class.
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Resources.ResourceManager ResourceManager
+        {
+            get
+            {
+                if ((resourceMan == null))
+                {
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DyingFire.Properties.Resources", typeof(Resources).Assembly);
+                    resourceMan = temp;
+                }
+                return resourceMan;
+            }
+        }
+
+        /// <summary>
+        ///   Overrides the current thread's CurrentUICulture property for all
+        ///   resource lookups using this strongly typed resource class.
+        /// </summary>
+        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
+        internal static global::System.Globalization.CultureInfo Culture
+        {
+            get
+            {
+                return resourceCulture;
+            }
+            set
+            {
+                resourceCulture = value;
+            }
+        }
+    }
+}
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//     Runtime Version:4.0.30319.42000
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+namespace DyingFire.Properties
+{
+
+
+    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase
+    {
+
+        private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
+
+        public static Settings Default
+        {
+            get
+            {
+                return defaultInstance;
+            }
+        }
+    }
+}
+//using Microsoft.Data.Sqlite; // NEW NAMESPACE
+using System.IO;
+
+namespace DyingFire.Services
+{
+    public class DatabaseService
+    {
+        private string DbName;
+        private string ConnectionString;
+
+        public DatabaseService()
+        {
+            string folder = System.AppDomain.CurrentDomain.BaseDirectory;
+            DbName = System.IO.Path.Combine(folder, "DyingFire.db");
+            ConnectionString = "Data Source=" + DbName; // Version=3 is not needed anymore
+
+            //InitializeDatabase();
+        }
+
+        private void InitializeDatabase()
+        {
+            // Microsoft.Data.Sqlite creates the file automatically when you Open(),
+            // so we don't need the "CreateFile" command anymore.
+
+            // Note the spelling: SqliteConnection (Only 'S' is capital)
+            ?Zjkhdfksbsjk
+        }
+    }
+}
+using DyingFire.ViewModels; // To get ObservableObject
+
+namespace DyingFire.Models
+{
+    public enum ItemType { Key, Weapon, Consumable, Clue }
+
+    // Inherits from ObservableObject so the UI updates instantly when selected
+    public class GameItem : ObservableObject, IInteractable
+    {
+        private bool _isSelected;
+
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string ImagePath { get; set; } // Path to the icon image
+        public ItemType Type { get; set; }
+
+        // This supports your "Click Once to Highlight" feature
+        public bool IsSelected
+        {
+            get { return _isSelected; }
+            set
+            {
+                _isSelected = value;
+                OnPropertyChanged(); // Updates the UI border automatically
+                OnPropertyChanged("BorderColor");
+            }
+        }
+
+        public string Interact()
+        {
+            return $"You used the {Name}.";
+        }
+    }
+}
+namespace DyingFire.Models
+{
+    public interface IInteractable
+    {
+        string Name { get; }
+        string Interact(); // Returns text describing what happened
+    }
+}
+using System.Collections.ObjectModel;
+namespace DyingFire.Models
+{
+    public class Location
+    {
+        public int ID { get; set; }
+        public string ImagePath { get; set; } // The main background image
+        public string Description { get; set; }
+
+        public ObservableCollection<GameItem> RoomItems { get; set; }
+        public ObservableCollection<InteractableObject> Interactables { get; set; }
+
+        // Navigation IDs. 
+        // If ID is -1, it means you can't go that way (the arrow will be hidden).
+        public int LocationToNorth { get; set; } = -1;
+        public int LocationToEast { get; set; } = -1; // Right
+        public int LocationToSouth { get; set; } = -1; // Back/Down
+        public int LocationToWest { get; set; } = -1; // Left
+
+
+        // Constructor
+        public Location(int id, string imagePath, string desc)
+        {
+            ID = id;
+            ImagePath = imagePath;
+            Description = desc;
+
+            RoomItems = new ObservableCollection<GameItem>();
+            Interactables = new ObservableCollection<InteractableObject>();
+        }
+    }
+}
+using DyingFire.Models;
+//using DyingFire.Services;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Windows;
+
+namespace DyingFire.ViewModels
+{
+    public class MainViewModel : ObservableObject
+    {
+        //private DatabaseService _dbService;
+        private List<Location> _allLocations; // The Map
+
+        // --- PROPERTIES ---
+        public ObservableCollection<GameItem> QuickBar { get; set; }
+
+        private Location _currentLocation;
+        public Location CurrentLocation
+        {
+            get { return _currentLocation; }
+            set { _currentLocation = value; OnPropertyChanged(); }
+        }
+
+        // --- CONSTRUCTOR ---
+        public MainViewModel()
+        {
+            if (DesignerProperties.GetIsInDesignMode(new DependencyObject())) return;
+
+            // _dbService = new DatabaseService(); // Database disabled for now
+            QuickBar = new ObservableCollection<GameItem>();
+
+            for (int i = 0; i < 5; i++)
+            {
+                QuickBar.Add(null); // Initialize with empty slots
+            }
+
+            LoadGameWorld();
+        }
+
+        private void LoadGameWorld()
+        {
+            _allLocations = new List<Location>();
+
+            // 1. Create Rooms
+            var room1 = new Location(1, "/Assets/Images/room1.png", "The Starting Cell");
+            var hallway = new Location(2, "/Assets/Images/hallway.png", "The Dark Hallway");
+            var room2 = new Location(3, "/Assets/Images/room2.png", "The Ritual Room");
+
+            // 2. Connect Rooms
+            room1.LocationToNorth = 2;      // Room 1 -> Hallway
+            hallway.LocationToSouth = 1;    // Hallway -> Room 1
+            hallway.LocationToNorth = 3;    // Hallway -> Room 2
+            room2.LocationToSouth = 2;      // Room 2 -> Hallway
+
+            var room4 = new Location(4, "/Assets/Images/room4.png", "Abandoned Library");
+            room4.LocationToWest = 2;      // Room 4 -> Hallway
+
+            hallway.LocationToEast = 4;    // Hallway -> Room 4
+            room4.LocationToWest = 3;
+
+
+            // 3. Add to Map
+            _allLocations.Add(room1);
+            _allLocations.Add(hallway);
+            _allLocations.Add(room2);
+            _allLocations.Add(room4);
+
+            // 4. Start Game
+            CurrentLocation = room1;
+
+            // Add dummy key
+            //QuickBar.Add(new GameItem { Name = "Rusty Key", Type = ItemType.Key, Description = "An old key covered in rust. I wonder if it still works" });
+
+            var door = new InteractableObject { Name = "Wooden Door", X = 400, Y = 150, Width = 180, Height = 250, IsLocked = true, RequiredItem = "Rusty Key", LockedMessage = "The door is locked, i wonder if that rusty key hole works?", TargetLocationID = 4};
+
+            hallway.Interactables.Add(door);
+
+            var chest = new InteractableObject { Name = "Old Chest", X = 425, Y = 400, Width = 200, Height = 100 };
+
+            chest.ItemsInside.Add(new GameItem
+            {
+                Name = "Rusty Key",
+                Type = ItemType.Key,
+                Description = "An old key covered in rust. I wonder if it still works",
+                //ImagePath = "/Assets/Images/rusty_key.png"
+            });
+
+            room2.Interactables.Add(chest);
+        }
+
+        // --- MOVEMENT LOGIC ---
+        public void Move(string direction)
+        {
+            if (CurrentLocation == null) return;
+
+            int newLocationID = -1;
+
+            switch (direction)
+            {
+                case "North": newLocationID = CurrentLocation.LocationToNorth; break;
+                case "South": newLocationID = CurrentLocation.LocationToSouth; break;
+                case "East": newLocationID = CurrentLocation.LocationToEast; break;
+                case "West": newLocationID = CurrentLocation.LocationToWest; break;
+            }
+
+            if (newLocationID != -1)
+            {
+                var newRoom = _allLocations.FirstOrDefault(x => x.ID == newLocationID);
+                if (newRoom != null) CurrentLocation = newRoom;
+            }
+        }
+        public void EnterLocation(int locationID)
+        {
+            var location = _allLocations.FirstOrDefault(x => x.ID == locationID);
+            if (location != null) CurrentLocation = location;
+        }
+    }
+}
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace DyingFire.ViewModels
+{
+    public class ObservableObject : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+    }
+}
+<Application x:Class="DyingFire.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:DyingFire"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+         
+    </Application.Resources>
+</Application>
+<Window x:Class="DyingFire.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DyingFire.ViewModels"
+        Title="Dying Fire" Height="720" Width="1080" 
+        Background="#050505"
+        Cursor="None"
+        FontFamily="Gabriola">
+
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <ImageBrush x:Key="WoodBrush" ImageSource="/Assets/Images/stylized_wood.png" TileMode="Tile" Viewport="0,0,100,100" ViewportUnits="Absolute" Opacity="0.6"/>
+
+        <LinearGradientBrush x:Key="BronzeBorderBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#E6C898" Offset="0.0"/> <GradientStop Color="#B38B54" Offset="0.4"/> <GradientStop Color="#684824" Offset="0.7"/> <GradientStop Color="#E6C898" Offset="1.0"/> </LinearGradientBrush>
+
+        <SolidColorBrush x:Key="BoneBrush" Color="#C8C0B0"/> <SolidColorBrush x:Key="BloodBrush" Color="#660000"/> <SolidColorBrush x:Key="SanityBrush" Color="#2A3D45"/> <DropShadowEffect x:Key="GhostGlow" Color="#C8C0B0" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
+        
+        <SolidColorBrush x:Key="SlotBackground" Color="#D9080808"/> 
+
+        <Style x:Key="HorrorBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource BoneBrush}"/>
+            <Setter Property="FontFamily" Value="Gabriola"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="Cursor" Value="None"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="border" 
+                                    Background="{StaticResource SlotBackground}" 
+                                    BorderBrush="{StaticResource BronzeBorderBrush}" 
+                                    BorderThickness="1" 
+                                    CornerRadius="2">
+                            </Border>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#E6C898"/>
+                                <Setter TargetName="border" Property="Background" Value="#333"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Effect" Value="{StaticResource GhostGlow}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BronzeOrb" TargetType="Button">
+            <Setter Property="Width" Value="50"/>
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="Cursor" Value="None"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Ellipse Fill="#EE000000" Stroke="{StaticResource BronzeBorderBrush}" StrokeThickness="2"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.Foreground="{StaticResource BoneBrush}" TextBlock.FontSize="28"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Effect" Value="{StaticResource GhostGlow}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="GrimSlotTemplate">
+            <Button Click="QuickSlot_Click" Background="Transparent" BorderThickness="0" Margin="6" Cursor="None">
+                <Grid>
+                    <Border Width="60" Height="60" 
+                            Background="{StaticResource SlotBackground}" 
+                            BorderBrush="{StaticResource BronzeBorderBrush}" 
+                            BorderThickness="1" 
+                            CornerRadius="2">
+                        
+                        <TextBlock Text="{Binding Name}" 
+                                   Foreground="#999" 
+                                   FontFamily="Palatino Linotype" 
+                                   FontSize="10" 
+                                   TextWrapping="Wrap" 
+                                   TextAlignment="Center" 
+                                   VerticalAlignment="Center" 
+                                   HorizontalAlignment="Center"
+                                   Opacity="0.7"/>
+                    </Border>
+                    
+                    <Border x:Name="SelectBorder" BorderThickness="1" BorderBrush="Transparent" CornerRadius="2"/>
+                </Grid>
+            </Button>
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <Grid MouseMove="Grid_MouseMove">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="140"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Viewbox Stretch="Uniform">
+                <Grid Width="900" Height="550">
+                    
+                    <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="UniformToFill"/>
+
+                    <Border BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="3" IsHitTestVisible="False">
+                        <Border.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="25"/>
+                        </Border.Effect>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding CurrentLocation.Interactables}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                                <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Width="{Binding Width}" Height="{Binding Height}" Background = "#33FF0000" BorderBrush="Red" BorderThickness="2" Cursor="None" Click="Interactable_Click"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Content="?" Style="{StaticResource BronzeOrb}" Click="MoveNorth_Click"/>
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Content="?" Style="{StaticResource BronzeOrb}" Click="MoveSouth_Click"/>
+                    <Button HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="?" Style="{StaticResource BronzeOrb}" Click="MoveWest_Click"/>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="?" Style="{StaticResource BronzeOrb}" Click="MoveEast_Click"/>
+
+                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
+                        <ListBox ItemsSource="{Binding CurrentLocation.RoomItems}" Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Name}" Click="RoomItem_Click" Style="{StaticResource HorrorBtn}" FontSize="18" Margin="0,4"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Grid>
+            </Viewbox>
+        </Grid>
+
+        <Border Grid.Row="1" Background="Black" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="0,2,0,0">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Direction="90" ShadowDepth="10" BlurRadius="30"/>
+            </Border.Effect>
+
+            <Grid>
+                <Border Background="{StaticResource WoodBrush}"/>
+                
+                <Border Background="#CC050505"/>
+
+                <Grid Margin="20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/> 
+                        <ColumnDefinition Width="220"/>  
+                        <ColumnDefinition Width="*"/>    
+                        <ColumnDefinition Width="Auto"/> 
+                        <ColumnDefinition Width="*"/>    
+                        <ColumnDefinition Width="Auto"/> 
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Width="85" Height="85" CornerRadius="50" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="1" Background="#080808" Margin="0,0,20,0">
+                        <TextBlock Text="??" Foreground="#333" FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Vitality" Foreground="{StaticResource BoneBrush}" FontSize="22" Opacity="0.8"/>
+                        <Border BorderBrush="#333" BorderThickness="1" Height="10" CornerRadius="1" Background="#111">
+                            <ProgressBar Value="75" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="{StaticResource BloodBrush}"/>
+                        </Border>
+
+                        <TextBlock Text="Sanity" Foreground="{StaticResource BoneBrush}" FontSize="22" Margin="0,8,0,0" Opacity="0.8"/>
+                        <Border BorderBrush="#333" BorderThickness="1" Height="10" CornerRadius="1" Background="#111">
+                            <ProgressBar Value="40" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="{StaticResource SanityBrush}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="~" Foreground="{StaticResource BronzeBorderBrush}" FontSize="30" VerticalAlignment="Center" Margin="0,0,10,0" Opacity="0.5"/>
+                        <ItemsControl ItemsSource="{Binding QuickBar}" ItemTemplate="{StaticResource GrimSlotTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <TextBlock Text="~" Foreground="{StaticResource BronzeBorderBrush}" FontSize="30" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.5"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="5" Content="Inventory" Width="120" Height="45" Style="{StaticResource HorrorBtn}" Click="Inventory_Click"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Grid x:Name="InventoryScreen" Visibility="Collapsed" Panel.ZIndex="2000" Background="#EE000000">
+            <Border Width="600" Height="450" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
+                <Grid>
+                    <Border Background="#DD050505" CornerRadius="3"/>
+                    
+                    <Grid Margin="30">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="- Equipment -" Foreground="{StaticResource BoneBrush}" FontSize="36" HorizontalAlignment="Center" Opacity="0.9"/>
+
+                        <ListBox Grid.Row="1" ItemsSource="{Binding QuickBar}" Background="Transparent" BorderThickness="0" Margin="0,20">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel HorizontalAlignment="Center"/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="80" Height="80" Margin="10" Background="{StaticResource SlotBackground}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="1" CornerRadius="2">
+                                        <TextBlock Text="{Binding Name}" Foreground="#888" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontFamily="Palatino Linotype"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Button Grid.Row="2" Content="Close" Width="140" Height="45" Style="{StaticResource HorrorBtn}" Click="Inventory_Click"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="GamePopup" Visibility="Collapsed" Panel.ZIndex="3000" Background="#EE000000">
+            <Border Width="450" Height="250" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
+                <Grid>
+                    <Border Background="#EE050505" CornerRadius="3"/>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
+                        <TextBlock x:Name="PopupTitle" Text="Found" Foreground="{StaticResource BoneBrush}" FontSize="32" HorizontalAlignment="Center" Opacity="0.9"/>
+                        
+                        <Border Height="1" Width="150" Background="{StaticResource BronzeBorderBrush}" Margin="0,5,0,15" Opacity="0.6"/>
+                        
+                        <TextBlock x:Name="PopupMessage" Text="..." Foreground="#AAA" FontSize="20" FontFamily="Palatino Linotype" TextWrapping="Wrap" TextAlignment="Center"/>
+                        
+                        <Button Content="Continue" Width="130" Height="40" Style="{StaticResource HorrorBtn}" Click="ClosePopup_Click" Margin="0,25,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Image x:Name="CustomCursor" Source="/Assets/Images/cursor_gauntlet.png" 
+               Grid.RowSpan="2"
+               Width="80" Height="80" 
+               HorizontalAlignment="Left" VerticalAlignment="Top" 
+               IsHitTestVisible="False" Panel.ZIndex="9999">
+            <Image.Effect>
+                <DropShadowEffect Color="Black" BlurRadius="5" ShadowDepth="2"/>
+            </Image.Effect>
+        </Image>
+
+    </Grid>
+</Window>

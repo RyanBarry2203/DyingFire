@@ -44,36 +44,69 @@ namespace DyingFire.ViewModels
             _allLocations = new List<Location>();
 
             // 1. Create Rooms
-            var room1 = new Location(1, "/Assets/Images/room1.png", "The Starting Cell");
-            var hallway = new Location(2, "/Assets/Images/hallway.png", "The Dark Hallway");
-            var room2 = new Location(3, "/Assets/Images/room2.png", "The Ritual Room");
+            var library = new Location(1, "/Assets/Images/Library.png", "Ritual Room");
+            var hallway = new Location(2, "/Assets/Images/hallway.png", "Spooky Hallway");
+            var room2 = new Location(3, "/Assets/Images/room2.png", "Starting Bedroom");
+
+            var normalStairs = new Location(4, "/Assets/Images/Stairs.png", "Normal Stairs");
+            var spookyStairs = new Location(5, "/Assets/Images/fellaOnTheStairs.png", "Fella On The Stairs!");
+            var spookyHallway = new Location(6, "/Assets/Images/darkSpookyHallway.png", "Dark Hallway");
+            var bedRoom = new Location(7, "/Assets/Images/AnotherBedroom.png", "Bedroom");
+            var jumpScareF1 = new Location(8, "/Assets/Images/JumpScareFrame1.png", "JumpScareF1");
+            var jumpScareF2 = new Location(9, "/Assets/Images/jumpScareFrame2.png", "JumpScareF2");
+            var yellowHallway = new Location(10, "/Assets/Images/yellowHallwayShadow.png", "Yellow Hallway");
+            var scaryMirror = new Location(11, "/Assets/Images/scaryMirror.png", "Scary Mirror");
 
             // 2. Connect Rooms
-            room1.LocationToNorth = 2;      // Room 1 -> Hallway
+            library.LocationToNorth = 2;      // Room 1 -> Hallway
             hallway.LocationToSouth = 1;    // Hallway -> Room 1
             hallway.LocationToNorth = 3;    // Hallway -> Room 2
+            hallway.LocationToEast = -1;     // Hallway -> Room 1
             room2.LocationToSouth = 2;      // Room 2 -> Hallway
 
-            var room4 = new Location(4, "/Assets/Images/room4.png", "Abandoned Library");
-            room4.LocationToWest = 2;      // Room 4 -> Hallway
+            normalStairs.LocationToSouth = 2;    // Normal Stairs -> Hallway
+            normalStairs.LocationToNorth = 5;    // Normal Stairs -> Spooky Stairs
+            spookyStairs.LocationToSouth = 4;    // Spooky Stairs -> Normal Stairs
+            spookyStairs.LocationToEast = 6;    // Spooky Stairs -> Spooky Hallway
+            spookyHallway.LocationToSouth = 5;    // Spooky Hallway -> Spooky Stairs
+            spookyHallway.LocationToNorth = 7;    // Spooky Hallway -> Bedroom
+            bedRoom.LocationToSouth = 6;    // Bedroom -> Spooky Hallway
+            bedRoom.LocationToNorth = 8;    // Bedroom -> JumpScareF1
+            jumpScareF1.LocationToSouth = 9;    // JumpScareF1 -> Bedroom
+            jumpScareF1.LocationToNorth = 9;    // JumpScareF1 -> JumpScareF2
+            jumpScareF1.LocationToEast = 9;
+            jumpScareF1.LocationToWest = 9;    // JumpScareF2 -> JumpScareF1
+            jumpScareF2.LocationToSouth = 7;    // JumpScareF2 -> JumpScareF1
+            jumpScareF2.LocationToNorth = 10;    // JumpScareF2 -> Yellow Hallway
+            yellowHallway.LocationToSouth = 8;    // Yellow Hallway -> JumpScareF2
+            yellowHallway.LocationToEast = 11;    // Yellow Hallway -> Scary Mirror
+            scaryMirror.LocationToSouth = 10;    // Scary Mirror -> Yellow Hallway
 
-            hallway.LocationToEast = 4;    // Hallway -> Room 4
-            room4.LocationToWest = 3;
+
 
 
             // 3. Add to Map
-            _allLocations.Add(room1);
+            _allLocations.Add(library);
             _allLocations.Add(hallway);
             _allLocations.Add(room2);
-            _allLocations.Add(room4);
+
+
+            _allLocations.Add(normalStairs);
+            _allLocations.Add(spookyStairs);
+            _allLocations.Add(spookyHallway);
+            _allLocations.Add(bedRoom);
+            _allLocations.Add(jumpScareF1);
+            _allLocations.Add(jumpScareF2);
+            _allLocations.Add(yellowHallway);
+            _allLocations.Add(scaryMirror);
 
             // 4. Start Game
-            CurrentLocation = room1;
+            CurrentLocation = room2;
 
             // Add dummy key
             //QuickBar.Add(new GameItem { Name = "Rusty Key", Type = ItemType.Key, Description = "An old key covered in rust. I wonder if it still works" });
 
-            var door = new InteractableObject { Name = "Wooden Door", X = 400, Y = 150, Width = 180, Height = 250, IsLocked = true, RequiredItem = "Rusty Key", LockedMessage = "The door is locked, i wonder if that rusty key hole works?", TargetLocationID = 4};
+            var door = new InteractableObject { Name = "Wooden Door", X = 595, Y = 175, Width = 90, Height = 250, IsLocked = true, RequiredItem = "Rusty Key", LockedMessage = "The door is locked, i wonder if that rusty key hole works?", TargetLocationID = 4};
 
             hallway.Interactables.Add(door);
 
@@ -109,6 +142,18 @@ namespace DyingFire.ViewModels
             {
                 var newRoom = _allLocations.FirstOrDefault(x => x.ID == newLocationID);
                 if (newRoom != null) CurrentLocation = newRoom;
+            }
+
+            if (CurrentLocation != null && CurrentLocation.Interactables != null)
+            {
+                foreach (var interactable in CurrentLocation.Interactables)
+                {
+                    if (interactable.IsLocked == false)
+                    {
+                        // Logic to allow movement through this interactable if needed
+
+                    }
+                }
             }
         }
         public void EnterLocation(int locationID)

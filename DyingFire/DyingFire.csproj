@@ -154,13 +154,24 @@
     <Folder Include="Services\" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Images\scaryMirror.png" />
+    <Resource Include="Assets\Images\Stairs.png" />
+    <Resource Include="Assets\Images\yellowHallwayShadow.png" />
     <Resource Include="Assets\Images\stylized_wood.png" />
     <Resource Include="Assets\Images\wooden_texture.png" />
     <Resource Include="Assets\Images\cursor_gauntlet.png" />
     <Resource Include="Assets\Images\gold_frame.png" />
+    <Resource Include="Assets\Images\AnotherBedroom.png" />
+    <Resource Include="Assets\Images\anotherRitualRoom.png" />
+    <Resource Include="Assets\Images\Cell.png" />
+    <Resource Include="Assets\Images\darkSpookyHallway.png" />
+    <Resource Include="Assets\Images\fellaOnTheStairs.png" />
     <Content Include="Assets\Images\hallway.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Assets\Images\JumpScareFrame1.png" />
+    <Resource Include="Assets\Images\jumpScareFrame2.png" />
+    <Resource Include="Assets\Images\Library.png" />
     <Content Include="Assets\Images\room1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
