@@ -12,14 +12,23 @@
     </Window.DataContext>
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
         <ImageBrush x:Key="WoodBrush" ImageSource="/Assets/Images/stylized_wood.png" TileMode="Tile" Viewport="0,0,100,100" ViewportUnits="Absolute" Opacity="0.6"/>
 
         <LinearGradientBrush x:Key="BronzeBorderBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#E6C898" Offset="0.0"/> <GradientStop Color="#B38B54" Offset="0.4"/> <GradientStop Color="#684824" Offset="0.7"/> <GradientStop Color="#E6C898" Offset="1.0"/> </LinearGradientBrush>
+            <GradientStop Color="#E6C898" Offset="0.0"/>
+            <GradientStop Color="#B38B54" Offset="0.4"/>
+            <GradientStop Color="#684824" Offset="0.7"/>
+            <GradientStop Color="#E6C898" Offset="1.0"/>
+        </LinearGradientBrush>
 
-        <SolidColorBrush x:Key="BoneBrush" Color="#C8C0B0"/> <SolidColorBrush x:Key="BloodBrush" Color="#660000"/> <SolidColorBrush x:Key="SanityBrush" Color="#2A3D45"/> <DropShadowEffect x:Key="GhostGlow" Color="#C8C0B0" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
-        
-        <SolidColorBrush x:Key="SlotBackground" Color="#D9080808"/> 
+        <SolidColorBrush x:Key="BoneBrush" Color="#C8C0B0"/>
+        <SolidColorBrush x:Key="BloodBrush" Color="#660000"/>
+        <SolidColorBrush x:Key="SanityBrush" Color="#2A3D45"/>
+        <DropShadowEffect x:Key="GhostGlow" Color="#C8C0B0" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
+
+        <SolidColorBrush x:Key="SlotBackground" Color="#D9080808"/>
 
         <Style x:Key="HorrorBtn" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource BoneBrush}"/>
@@ -74,14 +83,14 @@
         </Style>
 
         <DataTemplate x:Key="GrimSlotTemplate">
-            <Button Click="QuickSlot_Click" Background="Transparent" BorderThickness="0" Margin="6" Cursor="None">
+            <Button Command="{Binding DataContext.SelectQuickSlotCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Margin="6" Cursor="None">
                 <Grid>
                     <Border Width="60" Height="60" 
                             Background="{StaticResource SlotBackground}" 
                             BorderBrush="{StaticResource BronzeBorderBrush}" 
                             BorderThickness="1" 
                             CornerRadius="2">
-                        
+
                         <TextBlock Text="{Binding Name}" 
                                    Foreground="#999" 
                                    FontFamily="Palatino Linotype" 
@@ -92,8 +101,8 @@
                                    HorizontalAlignment="Center"
                                    Opacity="0.7"/>
                     </Border>
-                    
-                    <Border x:Name="SelectBorder" BorderThickness="1" BorderBrush="Transparent" CornerRadius="2"/>
+
+                    <Border x:Name="SelectBorder" BorderThickness="1" BorderBrush="{Binding BorderColor}" CornerRadius="2"/>
                 </Grid>
             </Button>
         </DataTemplate>
@@ -109,7 +118,7 @@
         <Grid Grid.Row="0">
             <Viewbox Stretch="Uniform">
                 <Grid Width="900" Height="550">
-                    
+
                     <Image Source="{Binding CurrentLocation.ImagePath}" Stretch="UniformToFill"/>
 
                     <Border BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="3" IsHitTestVisible="False">
@@ -132,21 +141,23 @@
                         </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Width="{Binding Width}" Height="{Binding Height}" Background = "#33FF0000" BorderBrush="Red" BorderThickness="2" Cursor="None" Click="Interactable_Click"/>
+                                <Button Width="{Binding Width}" Height="{Binding Height}" Background="#33FF0000" BorderBrush="Red" BorderThickness="2" Cursor="None" 
+                                        Command="{Binding DataContext.InteractCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Content="▲" Style="{StaticResource BronzeOrb}" Click="MoveNorth_Click"/>
-                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Content="▼" Style="{StaticResource BronzeOrb}" Click="MoveSouth_Click"/>
-                    <Button HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="◀" Style="{StaticResource BronzeOrb}" Click="MoveWest_Click"/>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="▶" Style="{StaticResource BronzeOrb}" Click="MoveEast_Click"/>
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Content="▲" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="North"/>
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Content="▼" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="South"/>
+                    <Button HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="◀" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="West"/>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="▶" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="East"/>
 
                     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
                         <ListBox ItemsSource="{Binding CurrentLocation.RoomItems}" Background="Transparent" BorderThickness="0">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Content="{Binding Name}" Click="RoomItem_Click" Style="{StaticResource HorrorBtn}" FontSize="18" Margin="0,4"/>
+                                    <Button Content="{Binding Name}" Style="{StaticResource HorrorBtn}" FontSize="18" Margin="0,4"
+                                            Command="{Binding DataContext.LootItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
@@ -162,17 +173,16 @@
 
             <Grid>
                 <Border Background="{StaticResource WoodBrush}"/>
-                
                 <Border Background="#CC050505"/>
 
                 <Grid Margin="20,10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/> 
-                        <ColumnDefinition Width="220"/>  
-                        <ColumnDefinition Width="*"/>    
-                        <ColumnDefinition Width="Auto"/> 
-                        <ColumnDefinition Width="*"/>    
-                        <ColumnDefinition Width="Auto"/> 
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0" Width="85" Height="85" CornerRadius="50" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="1" Background="#080808" Margin="0,0,20,0">
@@ -203,16 +213,16 @@
                         <TextBlock Text="~" Foreground="{StaticResource BronzeBorderBrush}" FontSize="30" VerticalAlignment="Center" Margin="10,0,0,0" Opacity="0.5"/>
                     </StackPanel>
 
-                    <Button Grid.Column="5" Content="Inventory" Width="120" Height="45" Style="{StaticResource HorrorBtn}" Click="Inventory_Click"/>
+                    <Button Grid.Column="5" Content="Inventory" Width="120" Height="45" Style="{StaticResource HorrorBtn}" Command="{Binding ToggleInventoryCommand}"/>
                 </Grid>
             </Grid>
         </Border>
 
-        <Grid x:Name="InventoryScreen" Visibility="Collapsed" Panel.ZIndex="2000" Background="#EE000000">
+        <Grid x:Name="InventoryScreen" Visibility="{Binding IsInventoryVisible, Converter={StaticResource BoolToVis}}" Panel.ZIndex="2000" Background="#EE000000">
             <Border Width="600" Height="450" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
                 <Grid>
                     <Border Background="#DD050505" CornerRadius="3"/>
-                    
+
                     <Grid Margin="30">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -237,24 +247,24 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
 
-                        <Button Grid.Row="2" Content="Close" Width="140" Height="45" Style="{StaticResource HorrorBtn}" Click="Inventory_Click"/>
+                        <Button Grid.Row="2" Content="Close" Width="140" Height="45" Style="{StaticResource HorrorBtn}" Command="{Binding ToggleInventoryCommand}"/>
                     </Grid>
                 </Grid>
             </Border>
         </Grid>
 
-        <Grid x:Name="GamePopup" Visibility="Collapsed" Panel.ZIndex="3000" Background="#EE000000">
+        <Grid x:Name="GamePopup" Visibility="{Binding IsPopupVisible, Converter={StaticResource BoolToVis}}" Panel.ZIndex="3000" Background="#EE000000">
             <Border Width="450" Height="250" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
                 <Grid>
                     <Border Background="#EE050505" CornerRadius="3"/>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
-                        <TextBlock x:Name="PopupTitle" Text="Found" Foreground="{StaticResource BoneBrush}" FontSize="32" HorizontalAlignment="Center" Opacity="0.9"/>
-                        
+                        <TextBlock x:Name="PopupTitle" Text="{Binding PopupTitle}" Foreground="{StaticResource BoneBrush}" FontSize="32" HorizontalAlignment="Center" Opacity="0.9"/>
+
                         <Border Height="1" Width="150" Background="{StaticResource BronzeBorderBrush}" Margin="0,5,0,15" Opacity="0.6"/>
-                        
-                        <TextBlock x:Name="PopupMessage" Text="..." Foreground="#AAA" FontSize="20" FontFamily="Palatino Linotype" TextWrapping="Wrap" TextAlignment="Center"/>
-                        
-                        <Button Content="Continue" Width="130" Height="40" Style="{StaticResource HorrorBtn}" Click="ClosePopup_Click" Margin="0,25,0,0"/>
+
+                        <TextBlock x:Name="PopupMessage" Text="{Binding PopupMessage}" Foreground="#AAA" FontSize="20" FontFamily="Palatino Linotype" TextWrapping="Wrap" TextAlignment="Center"/>
+
+                        <Button Content="Continue" Width="130" Height="40" Style="{StaticResource HorrorBtn}" Command="{Binding ClosePopupCommand}" Margin="0,25,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>

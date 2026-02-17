@@ -1,20 +1,14 @@
 ﻿using DyingFire.Models;
-//using DyingFire.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Windows;
+using System.Windows.Input;
 
 namespace DyingFire.ViewModels
 {
     public class MainViewModel : ObservableObject
     {
-        //private DatabaseService _dbService;
-        private List<Location> _allLocations; // The Map
-
-        // --- PROPERTIES ---
-        public ObservableCollection<GameItem> QuickBar { get; set; }
+        private List<Location> _allLocations;
 
         private Location _currentLocation;
         public Location CurrentLocation
@@ -23,72 +17,171 @@ namespace DyingFire.ViewModels
             set { _currentLocation = value; OnPropertyChanged(); }
         }
 
-        // --- CONSTRUCTOR ---
+        public ObservableCollection<GameItem> QuickBar { get; set; }
+
+        private bool _isInventoryVisible;
+        public bool IsInventoryVisible
+        {
+            get { return _isInventoryVisible; }
+            set { _isInventoryVisible = value; OnPropertyChanged(); }
+        }
+
+        private bool _isPopupVisible;
+        public bool IsPopupVisible
+        {
+            get { return _isPopupVisible; }
+            set { _isPopupVisible = value; OnPropertyChanged(); }
+        }
+
+        private string _popupTitle;
+        public string PopupTitle
+        {
+            get { return _popupTitle; }
+            set { _popupTitle = value; OnPropertyChanged(); }
+        }
+
+        private string _popupMessage;
+        public string PopupMessage
+        {
+            get { return _popupMessage; }
+            set { _popupMessage = value; OnPropertyChanged(); }
+        }
+
+        public ICommand MoveCommand { get; }
+        public ICommand ToggleInventoryCommand { get; }
+        public ICommand ClosePopupCommand { get; }
+        public ICommand InteractCommand { get; }
+        public ICommand LootItemCommand { get; }
+        public ICommand SelectQuickSlotCommand { get; }
+
         public MainViewModel()
         {
-            if (DesignerProperties.GetIsInDesignMode(new DependencyObject())) return;
+            QuickBar = new ObservableCollection<GameItem>(new GameItem[5]);
 
-            // _dbService = new DatabaseService(); // Database disabled for now
-            QuickBar = new ObservableCollection<GameItem>();
-
-            for (int i = 0; i < 5; i++)
-            {
-                QuickBar.Add(null); // Initialize with empty slots
-            }
+            MoveCommand = new RelayCommand<string>(Move);
+            ToggleInventoryCommand = new RelayCommand<object>(_ => IsInventoryVisible = !IsInventoryVisible);
+            ClosePopupCommand = new RelayCommand<object>(_ => IsPopupVisible = false);
+            InteractCommand = new RelayCommand<InteractableObject>(Interact);
+            LootItemCommand = new RelayCommand<GameItem>(LootItem);
+            SelectQuickSlotCommand = new RelayCommand<GameItem>(SelectQuickSlot);
 
             LoadGameWorld();
         }
 
         private void LoadGameWorld()
         {
-            // 1. Initialize Service
             var db = new DyingFire.Services.DatabaseService();
-
-            // 2. Fetch Data (This one line replaces 50 lines of code!)
             _allLocations = db.LoadFullWorld();
 
-            // 3. Start Game
-            // We set the start room to ID 1 (The Cell)
-            CurrentLocation = _allLocations.FirstOrDefault(x => x.ID == 1);
+            if (_allLocations != null && _allLocations.Count > 0)
+            {
+                CurrentLocation = _allLocations.FirstOrDefault(x => x.ID == 1);
+            }
         }
 
-        // --- MOVEMENT LOGIC ---
-        public void Move(string direction)
+        private void ShowMessage(string title, string message)
+        {
+            PopupTitle = title;
+            PopupMessage = message;
+            IsPopupVisible = true;
+        }
+
+        private void Move(string direction)
         {
             if (CurrentLocation == null) return;
 
-            int newLocationID = -1;
+            int newLocID = -1;
 
-            switch (direction)
-            {
-                case "North": newLocationID = CurrentLocation.LocationToNorth; break;
-                case "South": newLocationID = CurrentLocation.LocationToSouth; break;
-                case "East": newLocationID = CurrentLocation.LocationToEast; break;
-                case "West": newLocationID = CurrentLocation.LocationToWest; break;
-            }
+            if (direction == "North") newLocID = CurrentLocation.LocationToNorth;
+            else if (direction == "South") newLocID = CurrentLocation.LocationToSouth;
+            else if (direction == "East") newLocID = CurrentLocation.LocationToEast;
+            else if (direction == "West") newLocID = CurrentLocation.LocationToWest;
 
-            if (newLocationID != -1)
+            if (newLocID != -1)
             {
-                var newRoom = _allLocations.FirstOrDefault(x => x.ID == newLocationID);
-                if (newRoom != null) CurrentLocation = newRoom;
-            }
-
-            if (CurrentLocation != null && CurrentLocation.Interactables != null)
-            {
-                foreach (var interactable in CurrentLocation.Interactables)
+                var newRoom = _allLocations.FirstOrDefault(x => x.ID == newLocID);
+                if (newRoom != null)
                 {
-                    if (interactable.IsLocked == false)
-                    {
-                        // Logic to allow movement through this interactable if needed
-
-                    }
+                    CurrentLocation = newRoom;
                 }
+                IsPopupVisible = false;
             }
         }
-        public void EnterLocation(int locationID)
+
+        private void Interact(InteractableObject obj)
         {
-            var location = _allLocations.FirstOrDefault(x => x.ID == locationID);
-            if (location != null) CurrentLocation = location;
+            if (obj == null) return;
+
+            if (obj.IsLocked)
+            {
+                var activeItem = QuickBar.FirstOrDefault(x => x != null && x.IsSelected);
+                if (activeItem != null && activeItem.Name == obj.RequiredItem)
+                {
+                    obj.IsLocked = false;
+                    CurrentLocation = CurrentLocation;
+                    ShowMessage("UNLOCKED", "You used the " + activeItem.Name + " to unlock the " + obj.Name + ".");
+                }
+                else
+                {
+                    ShowMessage("LOCKED", obj.LockedMessage);
+                }
+                return;
+            }
+
+            if (obj.TargetLocationID > 0)
+            {
+                var teleportRoom = _allLocations.FirstOrDefault(x => x.ID == obj.TargetLocationID);
+                if (teleportRoom != null)
+                {
+                    CurrentLocation = teleportRoom;
+                }
+                IsPopupVisible = false;
+                return;
+            }
+
+            if (obj.ItemsInside.Count > 0)
+            {
+                ShowMessage("SEARCHED", "You searched the " + obj.Name + " and found items!");
+                foreach (var item in obj.ItemsInside)
+                {
+                    CurrentLocation.RoomItems.Add(item);
+                }
+                obj.ItemsInside.Clear();
+            }
+            else
+            {
+                ShowMessage("EMPTY", "The " + obj.Name + " is empty.");
+            }
+        }
+
+        private void LootItem(GameItem item)
+        {
+            if (item == null) return;
+            CurrentLocation.RoomItems.Remove(item);
+
+            for (int i = 0; i < QuickBar.Count; i++)
+            {
+                if (QuickBar[i] == null)
+                {
+                    QuickBar[i] = item;
+                    break;
+                }
+            }
+            ShowMessage("ITEM FOUND", "You picked up: " + item.Name);
+        }
+
+        private void SelectQuickSlot(GameItem item)
+        {
+            if (item == null) return;
+
+            foreach (var slotItem in QuickBar)
+            {
+                if (slotItem != null)
+                {
+                    slotItem.IsSelected = false;
+                }
+            }
+            item.IsSelected = true;
         }
     }
 }

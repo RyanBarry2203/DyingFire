@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using DyingFire.ViewModels;
 
 namespace DyingFire.Models
 {
     public class InteractableObject : ObservableObject
     {
-
+        public int ID { get; set; }
         public string Name { get; set; }
 
         public double X { get; set; }
@@ -18,7 +13,8 @@ namespace DyingFire.Models
         public double Width { get; set; }
         public double Height { get; set; }
 
-        public bool _isLocked { get; set; }
+
+        private bool _isLocked;
         public bool IsLocked
         {
             get { return _isLocked; }
@@ -28,10 +24,11 @@ namespace DyingFire.Models
                 OnPropertyChanged(nameof(IsLocked));
             }
         }
+
         public string RequiredItem { get; set; }
         public string LockedMessage { get; set; } = "It's locked.";
 
-        public int TargetLocationID { get; set; } = 0; // 0 means no teleport
+        public int TargetLocationID { get; set; } = 0;
         public ObservableCollection<GameItem> ItemsInside { get; set; }
 
         public InteractableObject()

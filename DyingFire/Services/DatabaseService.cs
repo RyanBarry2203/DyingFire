@@ -57,6 +57,7 @@ namespace DyingFire.Services
                     {
                         var interactable = new InteractableObject
                         {
+                            ID = Convert.ToInt32(reader["ID"]),
                             Name = reader["Name"].ToString(),
                             X = Convert.ToDouble(reader["X"]),
                             Y = Convert.ToDouble(reader["Y"]),
@@ -108,14 +109,12 @@ namespace DyingFire.Services
                         // Is it in a chest?
                         else if (reader["ParentInteractableID"] != DBNull.Value)
                         {
-                            // HARD CODED FIX FOR LEARNING: 
                             int chestID = Convert.ToInt32(reader["ParentInteractableID"]);
 
-                            // Logic: Find the chest in the Ritual Room (Room 3)
-                            var ritualRoom = locations.FirstOrDefault(x => x.ID == 3);
-                            var chest = ritualRoom?.Interactables.FirstOrDefault(x => x.Name == "Old Chest");
+                            var container = locations.SelectMany(loc => loc.Interactables)
+                                                     .FirstOrDefault(inter => inter.ID == chestID);
 
-                            if (chest != null) chest.ItemsInside.Add(item);
+                            if (container != null) container.ItemsInside.Add(item);
                         }
                     }
                 }
