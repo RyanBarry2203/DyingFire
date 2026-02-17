@@ -169,10 +169,10 @@
   <ItemGroup />
   <ItemGroup>
     <Content Include="GameData.mdf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="GameData_log.ldf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <DependentUpon>GameData.mdf</DependentUpon>
     </Content>
     <Resource Include="Assets\Images\scaryMirror.png" />
