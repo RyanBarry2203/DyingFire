@@ -10,6 +10,7 @@ namespace DyingFire.Models
 
         public string Name { get; set; }
         public string Description { get; set; }
+        public string Lore { get; set; }
         public string ImagePath { get; set; }
         public ItemType Type { get; set; }
 
@@ -20,11 +21,11 @@ namespace DyingFire.Models
             {
                 _isSelected = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(BorderColor)); 
+                OnPropertyChanged(nameof(BorderColor));
             }
         }
 
-        public string BorderColor => IsSelected ? "#E6C898" : "Transparent";
+        public string BorderColor => IsSelected ? "#B38B54" : "Transparent";
 
         public string Interact()
         {

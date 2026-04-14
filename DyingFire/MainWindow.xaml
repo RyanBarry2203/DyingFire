@@ -86,23 +86,25 @@
             <Button Command="{Binding DataContext.SelectQuickSlotCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Margin="6" Cursor="None">
                 <Grid>
                     <Border Width="60" Height="60" 
-                            Background="{StaticResource SlotBackground}" 
-                            BorderBrush="{StaticResource BronzeBorderBrush}" 
-                            BorderThickness="1" 
-                            CornerRadius="2">
+                    Background="#111111" 
+                    BorderBrush="#333333" 
+                    BorderThickness="1" 
+                    CornerRadius="2">
 
                         <TextBlock Text="{Binding Name}" 
-                                   Foreground="#999" 
-                                   FontFamily="Palatino Linotype" 
-                                   FontSize="10" 
-                                   TextWrapping="Wrap" 
-                                   TextAlignment="Center" 
-                                   VerticalAlignment="Center" 
-                                   HorizontalAlignment="Center"
-                                   Opacity="0.7"/>
+                           Foreground="#888" 
+                           FontFamily="Palatino Linotype" 
+                           FontSize="12" 
+                           TextWrapping="Wrap" 
+                           TextAlignment="Center" 
+                           VerticalAlignment="Center" 
+                           HorizontalAlignment="Center"/>
                     </Border>
-
-                    <Border x:Name="SelectBorder" BorderThickness="1" BorderBrush="{Binding BorderColor}" CornerRadius="2"/>
+                    <Border x:Name="SelectBorder" BorderThickness="2" BorderBrush="{Binding BorderColor}" CornerRadius="2">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#B38B54" BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
+                        </Border.Effect>
+                    </Border>
                 </Grid>
             </Button>
         </DataTemplate>
@@ -157,7 +159,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Button Content="{Binding Name}" Style="{StaticResource HorrorBtn}" FontSize="18" Margin="0,4"
-                                            Command="{Binding DataContext.LootItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                        Command="{Binding DataContext.LootItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
@@ -192,12 +194,12 @@
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <TextBlock Text="Vitality" Foreground="{StaticResource BoneBrush}" FontSize="22" Opacity="0.8"/>
                         <Border BorderBrush="#333" BorderThickness="1" Height="10" CornerRadius="1" Background="#111">
-                            <ProgressBar Value="75" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="{StaticResource BloodBrush}"/>
+                            <ProgressBar Value="{Binding Vitality}" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="{StaticResource BloodBrush}"/>
                         </Border>
 
                         <TextBlock Text="Sanity" Foreground="{StaticResource BoneBrush}" FontSize="22" Margin="0,8,0,0" Opacity="0.8"/>
                         <Border BorderBrush="#333" BorderThickness="1" Height="10" CornerRadius="1" Background="#111">
-                            <ProgressBar Value="40" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="{StaticResource SanityBrush}"/>
+                            <ProgressBar Value="{Binding Sanity}" Maximum="100" BorderThickness="0" Background="Transparent" Foreground="{StaticResource SanityBrush}"/>
                         </Border>
                     </StackPanel>
 
@@ -219,9 +221,9 @@
         </Border>
 
         <Grid x:Name="InventoryScreen" Visibility="{Binding IsInventoryVisible, Converter={StaticResource BoolToVis}}" Panel.ZIndex="2000" Background="#EE000000">
-            <Border Width="600" Height="450" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
+            <Border Width="800" Height="500" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
                 <Grid>
-                    <Border Background="#DD050505" CornerRadius="3"/>
+                    <Border Background="#F2050505" CornerRadius="3"/>
 
                     <Grid Margin="30">
                         <Grid.RowDefinitions>
@@ -230,22 +232,66 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Text="- Equipment -" Foreground="{StaticResource BoneBrush}" FontSize="36" HorizontalAlignment="Center" Opacity="0.9"/>
+                        <TextBlock Text="- Inventory -" Foreground="{StaticResource BoneBrush}" FontSize="36" HorizontalAlignment="Center" Opacity="0.9"/>
 
-                        <ListBox Grid.Row="1" ItemsSource="{Binding QuickBar}" Background="Transparent" BorderThickness="0" Margin="0,20">
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel HorizontalAlignment="Center"/>
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Width="80" Height="80" Margin="10" Background="{StaticResource SlotBackground}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="1" CornerRadius="2">
-                                        <TextBlock Text="{Binding Name}" Foreground="#888" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontFamily="Palatino Linotype"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <Grid Grid.Row="1" Margin="0,20">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.5*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ListBox Grid.Column="0" ItemsSource="{Binding FullInventory}" SelectedItem="{Binding SelectedInventoryItem}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Cursor" Value="None"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" Margin="5" CornerRadius="2">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource BronzeBorderBrush}"/>
+                                                            <Setter TargetName="Bd" Property="Background" Value="#22E6C898"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="70" Height="70" Background="#111" BorderBrush="#333" BorderThickness="1" CornerRadius="2">
+                                            <TextBlock Text="{Binding Name}" Foreground="#AAA" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontFamily="Palatino Linotype" FontSize="11"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <Border Grid.Column="1" BorderBrush="#333" BorderThickness="1,0,0,0" Padding="20,0,0,0">
+                                <StackPanel Visibility="{Binding SelectedInventoryItem, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding SelectedInventoryItem.Name}" Foreground="{StaticResource BoneBrush}" FontSize="28" TextWrapping="Wrap"/>
+                                    <Border Height="1" Background="#333" Margin="0,5,0,15"/>
+
+                                    <TextBlock Text="{Binding SelectedInventoryItem.Description}" Foreground="#AAA" FontSize="16" FontFamily="Palatino Linotype" TextWrapping="Wrap" Margin="0,0,0,20" FontStyle="Italic"/>
+
+                                    <TextBlock Text="{Binding SelectedInventoryItem.Lore}" Foreground="#888" FontSize="14" FontFamily="Palatino Linotype" TextWrapping="Wrap" Margin="0,0,0,30"/>
+
+                                    <Button Content="Equip to Quickbar" Width="150" Height="35" Style="{StaticResource HorrorBtn}" FontSize="18" 
+                                    Command="{Binding DataContext.EquipItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                    CommandParameter="{Binding SelectedInventoryItem}"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
 
                         <Button Grid.Row="2" Content="Close" Width="140" Height="45" Style="{StaticResource HorrorBtn}" Command="{Binding ToggleInventoryCommand}"/>
                     </Grid>

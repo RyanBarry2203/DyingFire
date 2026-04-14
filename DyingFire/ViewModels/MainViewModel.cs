@@ -5,6 +5,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
 using System.Windows.Threading;
+using System.ComponentModel;
+using System.Windows;
 
 namespace DyingFire.ViewModels
 {
@@ -37,6 +39,17 @@ namespace DyingFire.ViewModels
         }
 
         public ObservableCollection<GameItem> QuickBar { get; set; }
+
+        public ObservableCollection<GameItem> FullInventory { get; set; }
+
+        private GameItem _selectedInventoryItem;
+        public GameItem SelectedInventoryItem
+        {
+            get { return _selectedInventoryItem; }
+            set { _selectedInventoryItem = value; OnPropertyChanged(); }
+        }
+
+        public ICommand EquipItemCommand { get; }
 
         private bool _isInventoryVisible;
         public bool IsInventoryVisible
@@ -77,12 +90,20 @@ namespace DyingFire.ViewModels
         {
             QuickBar = new ObservableCollection<GameItem>(new GameItem[5]);
 
+            FullInventory = new ObservableCollection<GameItem>();
+            EquipItemCommand = new RelayCommand<GameItem>(EquipItem);
+
             MoveCommand = new RelayCommand<string>(Move);
             ToggleInventoryCommand = new RelayCommand<object>(_ => IsInventoryVisible = !IsInventoryVisible);
             ClosePopupCommand = new RelayCommand<object>(_ => IsPopupVisible = false);
             InteractCommand = new RelayCommand<InteractableObject>(Interact);
             LootItemCommand = new RelayCommand<GameItem>(LootItem);
             SelectQuickSlotCommand = new RelayCommand<GameItem>(SelectQuickSlot);
+
+            if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
+            {
+                return;
+            }
 
             LoadGameWorld();
             StartGameLoop();
@@ -179,15 +200,10 @@ namespace DyingFire.ViewModels
 
         private void TriggerJumpscare()
         {
-            var jumpscareRoom = _allLocations.FirstOrDefault(x => x.ID == 9);
-            if (jumpscareRoom != null)
-            {
-                CurrentLocation = jumpscareRoom;
-                Vitality -= 25;
-                ShowMessage("YOU WERE CAUGHT", "The creature found you...");
+            Vitality -= 50;
+            ShowMessage("YOU WERE CAUGHT", "The creature found you in the dark...");
 
-                MonsterLocationID = 8;
-            }
+            MonsterLocationID = 1;
         }
         private void ShowMessage(string title, string message)
         {
@@ -244,29 +260,32 @@ namespace DyingFire.ViewModels
             if (obj.TargetLocationID > 0)
             {
                 var teleportRoom = _allLocations.FirstOrDefault(x => x.ID == obj.TargetLocationID);
-                if (teleportRoom != null)
-                {
-                    CurrentLocation = teleportRoom;
-                }
+                if (teleportRoom != null) CurrentLocation = teleportRoom;
                 IsPopupVisible = false;
                 return;
             }
 
             if (obj.ItemsInside.Count > 0)
             {
-                ShowMessage("SEARCHED", "You searched the " + obj.Name + " and found items!");
+                string foundItems = "";
                 foreach (var item in obj.ItemsInside)
                 {
-                    CurrentLocation.RoomItems.Add(item);
+                    if (string.IsNullOrEmpty(item.Lore))
+                        item.Lore = "An object found abandoned in the dark. Its origins are unknown, but it feels cold to the touch.";
+
+                    FullInventory.Add(item);
+                    foundItems += item.Name + "\n";
                 }
                 obj.ItemsInside.Clear();
                 GenerateNoise(CurrentLocation.ID, 3);
+                ShowMessage("ITEM FOUND", "Added to Inventory:\n\n" + foundItems);
             }
             else
             {
                 ShowMessage("EMPTY", "The " + obj.Name + " is empty.");
             }
         }
+
 
         private void LootItem(GameItem item)
         {
@@ -282,6 +301,21 @@ namespace DyingFire.ViewModels
                 }
             }
             ShowMessage("ITEM FOUND", "You picked up: " + item.Name);
+        }
+
+        private void EquipItem(GameItem item)
+        {
+            if (item == null) return;
+
+            for (int i = 0; i < QuickBar.Count; i++)
+            {
+                if (QuickBar[i] == null)
+                {
+                    QuickBar[i] = item;
+                    return;
+                }
+            }
+            ShowMessage("QUICKBAR FULL", "Your quickbar is full. You must remove an item first.");
         }
 
         private void SelectQuickSlot(GameItem item)
