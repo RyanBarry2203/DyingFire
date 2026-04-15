@@ -13,7 +13,7 @@ namespace DyingFire.Services
 
         public DatabaseService()
         {
-            string dbFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GameData.mdf");
+            string dbFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GameData", "GameData.mdf");
             _connectionString = $@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename={dbFile};Integrated Security=True";
         }
 
@@ -25,7 +25,6 @@ namespace DyingFire.Services
             {
                 conn.Open();
 
-                // --- PASS 1: LOAD LOCATIONS ---
                 string sqlLoc = "SELECT * FROM Locations";
                 using (var cmd = new SqlCommand(sqlLoc, conn))
                 using (var reader = cmd.ExecuteReader())
@@ -38,7 +37,6 @@ namespace DyingFire.Services
                             reader["Name"].ToString()
                         );
 
-                        // Safely handle DBNulls for navigation
                         loc.LocationToNorth = reader["NorthID"] != DBNull.Value ? Convert.ToInt32(reader["NorthID"]) : -1;
                         loc.LocationToEast = reader["EastID"] != DBNull.Value ? Convert.ToInt32(reader["EastID"]) : -1;
                         loc.LocationToSouth = reader["SouthID"] != DBNull.Value ? Convert.ToInt32(reader["SouthID"]) : -1;
@@ -48,7 +46,6 @@ namespace DyingFire.Services
                     }
                 }
 
-                // --- PASS 2: LOAD INTERACTABLES ---
                 string sqlInt = "SELECT * FROM Interactables";
                 using (var cmd = new SqlCommand(sqlInt, conn))
                 using (var reader = cmd.ExecuteReader())
@@ -69,7 +66,6 @@ namespace DyingFire.Services
                             TargetLocationID = reader["TargetLocationID"] != DBNull.Value ? Convert.ToInt32(reader["TargetLocationID"]) : 0
                         };
 
-                        // Find the room this object belongs to
                         if (reader["ParentLocationID"] != DBNull.Value)
                         {
                             int parentID = Convert.ToInt32(reader["ParentLocationID"]);
@@ -77,14 +73,13 @@ namespace DyingFire.Services
 
                             if (parentRoom != null)
                             {
-                                // FIXED: Changed 'obj' to 'interactable'
                                 parentRoom.Interactables.Add(interactable);
                             }
                         }
                     }
                 }
 
-                // --- PASS 3: LOAD ITEMS ---
+
                 string sqlItem = "SELECT * FROM GameItems";
                 using (var cmd = new SqlCommand(sqlItem, conn))
                 using (var reader = cmd.ExecuteReader())
@@ -99,14 +94,13 @@ namespace DyingFire.Services
                             Type = (ItemType)Convert.ToInt32(reader["Type"]) // Cast INT from DB to ENUM safely
                         };
 
-                        // Is it on the floor?
                         if (reader["ParentLocationID"] != DBNull.Value)
                         {
                             int roomID = Convert.ToInt32(reader["ParentLocationID"]);
                             var room = locations.FirstOrDefault(r => r.ID == roomID);
                             if (room != null) room.RoomItems.Add(item);
                         }
-                        // Is it in a chest?
+
                         else if (reader["ParentInteractableID"] != DBNull.Value)
                         {
                             int chestID = Convert.ToInt32(reader["ParentInteractableID"]);
