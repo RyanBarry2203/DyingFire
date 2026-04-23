@@ -91,7 +91,8 @@ namespace DyingFire.Services
                             Name = reader["Name"].ToString(),
                             Description = reader["Description"].ToString(),
                             ImagePath = reader["ImagePath"] != DBNull.Value ? reader["ImagePath"].ToString() : null,
-                            Type = (ItemType)Convert.ToInt32(reader["Type"]) // Cast INT from DB to ENUM safely
+                            Type = (ItemType)Convert.ToInt32(reader["Type"]),
+                            Lore = reader["Lore"] != DBNull.Value ? reader["Lore"].ToString() : null
                         };
 
                         if (reader["ParentLocationID"] != DBNull.Value)

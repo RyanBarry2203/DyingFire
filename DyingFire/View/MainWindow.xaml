@@ -30,6 +30,37 @@
 
         <SolidColorBrush x:Key="SlotBackground" Color="#D9080808"/>
 
+        <Style x:Key="HorrorScrollThumb" TargetType="Thumb">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{StaticResource BronzeBorderBrush}" CornerRadius="3" Margin="2" Opacity="0.7"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="#0A0A0A"/>
+            <Setter Property="BorderBrush" Value="#222"/>
+            <Setter Property="BorderThickness" Value="1,0,0,0"/>
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"/>
+                            <Track x:Name="PART_Track" IsDirectionReversed="true">
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource HorrorScrollThumb}"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="HorrorBtn" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource BoneBrush}"/>
             <Setter Property="FontFamily" Value="Gabriola"/>
@@ -83,7 +114,10 @@
         </Style>
 
         <DataTemplate x:Key="GrimSlotTemplate">
-            <Button Command="{Binding DataContext.SelectQuickSlotCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Margin="6" Cursor="None">
+            <Button Command="{Binding DataContext.SelectQuickSlotCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+        CommandParameter="{Binding}" 
+        Background="Transparent" BorderThickness="0" Margin="6" Cursor="None"
+        FocusVisualStyle="{x:Null}">
                 <Grid>
                     <Border Width="60" Height="60" 
                     Background="#111111" 
@@ -154,16 +188,6 @@
                     <Button HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="◀" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="West"/>
                     <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="▶" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="East"/>
 
-                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
-                        <ListBox ItemsSource="{Binding CurrentLocation.RoomItems}" Background="Transparent" BorderThickness="0">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Content="{Binding Name}" Style="{StaticResource HorrorBtn}" FontSize="18" Margin="0,4"
-                        Command="{Binding DataContext.LootItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </StackPanel>
                 </Grid>
             </Viewbox>
         </Grid>
@@ -242,19 +266,34 @@
 
                             <ListBox Grid.Column="0" ItemsSource="{Binding FullInventory}" SelectedItem="{Binding SelectedInventoryItem}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
 
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel IsItemsHost="True" Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+
                                 <ListBox.ItemContainerStyle>
                                     <Style TargetType="ListBoxItem">
                                         <Setter Property="Cursor" Value="None"/>
+                                        <Setter Property="Margin" Value="8"/>
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="ListBoxItem">
-                                                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" Margin="5" CornerRadius="2">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <Border x:Name="Bd" Background="#111" BorderBrush="#333" BorderThickness="2" CornerRadius="4" Width="90" Height="90">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5"/>
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsSelected" Value="True">
                                                             <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource BronzeBorderBrush}"/>
-                                                            <Setter TargetName="Bd" Property="Background" Value="#22E6C898"/>
+                                                            <Setter TargetName="Bd" Property="Background" Value="#33E6C898"/>
+                                                            <Setter TargetName="Bd" Property="Effect">
+                                                                <Setter.Value>
+                                                                    <DropShadowEffect Color="#E6C898" BlurRadius="15" ShadowDepth="0" Opacity="0.8"/>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                        </Trigger>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bd" Property="BorderBrush" Value="#888"/>
                                                         </Trigger>
                                                     </ControlTemplate.Triggers>
                                                 </ControlTemplate>
@@ -263,33 +302,45 @@
                                     </Style>
                                 </ListBox.ItemContainerStyle>
 
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel/>
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Width="70" Height="70" Background="#111" BorderBrush="#333" BorderThickness="1" CornerRadius="2">
-                                            <TextBlock Text="{Binding Name}" Foreground="#AAA" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontFamily="Palatino Linotype" FontSize="11"/>
-                                        </Border>
+                                        <TextBlock Text="{Binding Name}" Foreground="#DDD" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center" FontFamily="Palatino Linotype" FontSize="14"/>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
 
                             <Border Grid.Column="1" BorderBrush="#333" BorderThickness="1,0,0,0" Padding="20,0,0,0">
-                                <StackPanel Visibility="{Binding SelectedInventoryItem, Converter={StaticResource BoolToVis}}">
-                                    <TextBlock Text="{Binding SelectedInventoryItem.Name}" Foreground="{StaticResource BoneBrush}" FontSize="28" TextWrapping="Wrap"/>
-                                    <Border Height="1" Background="#333" Margin="0,5,0,15"/>
+                                <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="20,0,20,0" BorderBrush="#333" BorderThickness="1,0,0,0">
+                                    <StackPanel>
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedInventoryItem}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Hidden"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
 
-                                    <TextBlock Text="{Binding SelectedInventoryItem.Description}" Foreground="#AAA" FontSize="16" FontFamily="Palatino Linotype" TextWrapping="Wrap" Margin="0,0,0,20" FontStyle="Italic"/>
+                                        <TextBlock Text="{Binding SelectedInventoryItem.Name}" Foreground="{StaticResource BoneBrush}" FontSize="28" TextWrapping="Wrap"/>
+                                        <Border Height="1" Background="#333" Margin="0,5,0,15"/>
 
-                                    <TextBlock Text="{Binding SelectedInventoryItem.Lore}" Foreground="#888" FontSize="14" FontFamily="Palatino Linotype" TextWrapping="Wrap" Margin="0,0,0,30"/>
+                                        <TextBlock Text="{Binding SelectedInventoryItem.Description}" Foreground="#AAA" FontSize="16" FontFamily="Palatino Linotype" TextWrapping="Wrap" Margin="0,0,0,20" FontStyle="Italic"/>
 
-                                    <Button Content="Equip to Quickbar" Width="150" Height="35" Style="{StaticResource HorrorBtn}" FontSize="18" 
-                                    Command="{Binding DataContext.EquipItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
-                                    CommandParameter="{Binding SelectedInventoryItem}"/>
-                                </StackPanel>
+                                        <TextBlock Text="{Binding SelectedInventoryItem.Lore}" Foreground="#888" FontSize="14" FontFamily="Palatino Linotype" TextWrapping="Wrap" Margin="0,0,0,30"/>
+
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                                            <Button Content="Equip / Unequip" Width="150" Height="35" Style="{StaticResource HorrorBtn}" FontSize="18" Margin="0,0,10,0"
+                    Command="{Binding DataContext.EquipItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                    CommandParameter="{Binding SelectedInventoryItem}"/>
+
+                                            <Button Content="Use Item" Width="100" Height="35" Style="{StaticResource HorrorBtn}" FontSize="18" 
+                    Command="{Binding DataContext.UseItemCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                    CommandParameter="{Binding SelectedInventoryItem}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ScrollViewer>
                             </Border>
                         </Grid>
 
@@ -300,17 +351,17 @@
         </Grid>
 
         <Grid x:Name="GamePopup" Visibility="{Binding IsPopupVisible, Converter={StaticResource BoolToVis}}" Panel.ZIndex="3000" Background="#EE000000">
-            <Border Width="450" Height="250" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
+            <Border MinWidth="400" MaxWidth="600" MinHeight="200" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{StaticResource WoodBrush}" BorderBrush="{StaticResource BronzeBorderBrush}" BorderThickness="2" CornerRadius="3">
                 <Grid>
                     <Border Background="#EE050505" CornerRadius="3"/>
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
-                        <TextBlock x:Name="PopupTitle" Text="{Binding PopupTitle}" Foreground="{StaticResource BoneBrush}" FontSize="32" HorizontalAlignment="Center" Opacity="0.9"/>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="30">
+                        <TextBlock x:Name="PopupTitle" Text="{Binding PopupTitle}" Foreground="{StaticResource BoneBrush}" FontSize="32" HorizontalAlignment="Center" Opacity="0.9" TextWrapping="Wrap" TextAlignment="Center"/>
 
-                        <Border Height="1" Width="150" Background="{StaticResource BronzeBorderBrush}" Margin="0,5,0,15" Opacity="0.6"/>
+                        <Border Height="1" Width="150" Background="{StaticResource BronzeBorderBrush}" Margin="0,15,0,20" Opacity="0.6"/>
 
                         <TextBlock x:Name="PopupMessage" Text="{Binding PopupMessage}" Foreground="#AAA" FontSize="20" FontFamily="Palatino Linotype" TextWrapping="Wrap" TextAlignment="Center"/>
 
-                        <Button Content="Continue" Width="130" Height="40" Style="{StaticResource HorrorBtn}" Command="{Binding ClosePopupCommand}" Margin="0,25,0,0"/>
+                        <Button Content="Continue" Width="130" Height="40" Style="{StaticResource HorrorBtn}" Command="{Binding ClosePopupCommand}" Margin="0,30,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>

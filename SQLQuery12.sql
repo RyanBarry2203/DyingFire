@@ -1,0 +1,3 @@
+﻿UPDATE [dbo].[Interactables] 
+SET ParentLocationID = 4, X = 480, Y = 380, Width = 180, Height = 120 
+WHERE Name = 'Old Chest';

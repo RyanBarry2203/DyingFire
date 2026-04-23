@@ -49,6 +49,7 @@ namespace DyingFire.ViewModels
             set { _selectedInventoryItem = value; OnPropertyChanged(); }
         }
 
+        public ICommand UseItemCommand { get; }
         public ICommand EquipItemCommand { get; }
 
         private bool _isInventoryVisible;
@@ -99,6 +100,7 @@ namespace DyingFire.ViewModels
             InteractCommand = new RelayCommand<InteractableObject>(Interact);
             LootItemCommand = new RelayCommand<GameItem>(LootItem);
             SelectQuickSlotCommand = new RelayCommand<GameItem>(SelectQuickSlot);
+            UseItemCommand = new RelayCommand<GameItem>(UseItem);
 
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
             {
@@ -229,6 +231,15 @@ namespace DyingFire.ViewModels
                     GenerateNoise(CurrentLocation.ID, 2);
                 }
                 IsPopupVisible = false;
+                if (FullInventory.Any(i => i.Name == "Spirit Box"))
+                {
+                    Random r = new Random();
+                    if (r.Next(100) < 20)
+                    {
+                        ShowMessage("CHILLING SOUND", "The Spirit Box in your bag suddenly crackles with loud static...");
+                        GenerateNoise(CurrentLocation.ID, 2);
+                    }
+                }
             }
         }
 
@@ -242,9 +253,20 @@ namespace DyingFire.ViewModels
                 if (activeItem != null && activeItem.Name == obj.RequiredItem)
                 {
                     obj.IsLocked = false;
-                    CurrentLocation = CurrentLocation;
-                    ShowMessage("UNLOCKED", "You used the " + activeItem.Name + " to unlock the " + obj.Name + ".");
                     GenerateNoise(CurrentLocation.ID, 3);
+
+                    if (obj.TargetLocationID > 0)
+                    {
+                        var teleportRoom = _allLocations.FirstOrDefault(x => x.ID == obj.TargetLocationID);
+                        if (teleportRoom != null)
+                        {
+                            CurrentLocation = teleportRoom;
+                            ShowMessage("UNLOCKED", "You used the " + activeItem.Name + " to unlock the door and walked through.");
+                            return;
+                        }
+                    }
+
+                    ShowMessage("UNLOCKED", "You used the " + activeItem.Name + " to unlock the " + obj.Name + ".");
                 }
                 else
                 {
@@ -300,9 +322,50 @@ namespace DyingFire.ViewModels
             ShowMessage("ITEM FOUND", "You picked up: " + item.Name);
         }
 
+        private void UseItem(GameItem item)
+        {
+            if (item == null) return;
+
+            if (item.Name == "Spirit Box")
+            {
+                string[] clues = {
+            "STATIC... 'stay in the light'... STATIC",
+            "STATIC... 'it hates the noise but hunts by it'... STATIC",
+            "STATIC... 'the library... it sleeps there'... STATIC"
+        };
+                Random r = new Random();
+                ShowMessage("SPIRIT BOX", clues[r.Next(clues.Length)]);
+
+                // Using the spirit box makes noise, which attracts the monster!
+                GenerateNoise(CurrentLocation.ID, 4);
+            }
+            else if (item.Type == ItemType.Clue)
+            {
+                // If it's a note, using it just reads it again
+                ShowMessage("READING", item.Lore);
+            }
+            else
+            {
+                ShowMessage("USE", "You can't use that right now.");
+            }
+        }
+
         private void EquipItem(GameItem item)
         {
             if (item == null) return;
+
+            if (QuickBar.Contains(item))
+            {
+                for (int i = 0; i < QuickBar.Count; i++)
+                {
+                    if (QuickBar[i] == item)
+                    {
+                        QuickBar[i] = null;
+                        item.IsSelected = false;
+                        return;
+                    }
+                }
+            }
 
             for (int i = 0; i < QuickBar.Count; i++)
             {
@@ -312,7 +375,8 @@ namespace DyingFire.ViewModels
                     return;
                 }
             }
-            ShowMessage("QUICKBAR FULL", "Your quickbar is full. You must remove an item first.");
+
+            ShowMessage("QUICKBAR FULL", "Your quickbar is full. You must unequip an item first.");
         }
 
         private void SelectQuickSlot(GameItem item)
