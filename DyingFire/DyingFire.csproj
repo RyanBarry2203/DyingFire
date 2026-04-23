@@ -173,8 +173,8 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="GameData\GameData_log.ldf">
-      <DependentUpon>GameData.mdf</DependentUpon>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <DependentUpon>GameData.mdf</DependentUpon>
     </Content>
     <Resource Include="Assets\Images\scaryMirror.png" />
     <Resource Include="Assets\Images\Stairs.png" />

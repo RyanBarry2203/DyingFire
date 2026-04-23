@@ -114,9 +114,6 @@ namespace DyingFire.ViewModels
             var db = new DyingFire.Services.DatabaseService();
             _allLocations = db.LoadFullWorld();
 
-            var darkHallway = _allLocations.FirstOrDefault(x => x.ID == 6);
-            if (darkHallway != null) darkHallway.IsDark = true;
-
             if (_allLocations != null && _allLocations.Count > 0)
             {
                 CurrentLocation = _allLocations.FirstOrDefault(x => x.ID == 1);
