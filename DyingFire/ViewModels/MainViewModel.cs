@@ -1,4 +1,7 @@
 ﻿using DyingFire.Models;
+using DyingFire.Services;
+using DyingFire.States;
+using DyingFire.Systems;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,113 +15,90 @@ namespace DyingFire.ViewModels
 {
     public class MainViewModel : ObservableObject
     {
-        private List<Location> _allLocations;
+        // Core Systems
+        private DatabaseService _dbService;
         private DispatcherTimer _gameTimer;
+        public GameStateManager StateManager { get; }
+        public InventorySystem Inventory { get; }
+        public ActionSystem Actions { get; }
+
+        //  Game Data
+        public List<Location> AllLocations { get; set; }
+        public bool IsParanormalActivityPresent { get; set; } = false;
 
         private int _sanity = 100;
-        public int Sanity
-        {
-            get { return _sanity; }
-            set { _sanity = value; OnPropertyChanged(); }
-        }
+        public int Sanity { get { return _sanity; } set { _sanity = value; OnPropertyChanged(); } }
 
         private int _vitality = 100;
-        public int Vitality
-        {
-            get { return _vitality; }
-            set { _vitality = value; OnPropertyChanged(); }
-        }
-
-        public int MonsterLocationID { get; set; } = 8;
+        public int Vitality { get { return _vitality; } set { _vitality = value; OnPropertyChanged(); } }
 
         private Location _currentLocation;
-        public Location CurrentLocation
-        {
-            get { return _currentLocation; }
-            set { _currentLocation = value; OnPropertyChanged(); }
-        }
+        public Location CurrentLocation { get { return _currentLocation; } set { _currentLocation = value; OnPropertyChanged(); } }
 
-        public ObservableCollection<GameItem> QuickBar { get; set; }
+        private string _backgroundImage;
+        public string BackgroundImage { get { return _backgroundImage; } set { _backgroundImage = value; OnPropertyChanged(); } }
 
-        public ObservableCollection<GameItem> FullInventory { get; set; }
+        private bool _isHidingUI;
+        public bool IsHidingUI { get { return _isHidingUI; } set { _isHidingUI = value; OnPropertyChanged(); } }
 
+        public AudioService Audio { get; } = new AudioService();
+
+        // UI State
         private GameItem _selectedInventoryItem;
-        public GameItem SelectedInventoryItem
-        {
-            get { return _selectedInventoryItem; }
-            set { _selectedInventoryItem = value; OnPropertyChanged(); }
-        }
-
-        public ICommand UseItemCommand { get; }
-        public ICommand EquipItemCommand { get; }
+        public GameItem SelectedInventoryItem { get { return _selectedInventoryItem; } set { _selectedInventoryItem = value; OnPropertyChanged(); } }
 
         private bool _isInventoryVisible;
-        public bool IsInventoryVisible
-        {
-            get { return _isInventoryVisible; }
-            set { _isInventoryVisible = value; OnPropertyChanged(); }
-        }
+        public bool IsInventoryVisible { get { return _isInventoryVisible; } set { _isInventoryVisible = value; OnPropertyChanged(); } }
 
         private bool _isPopupVisible;
-        public bool IsPopupVisible
-        {
-            get { return _isPopupVisible; }
-            set { _isPopupVisible = value; OnPropertyChanged(); }
-        }
+        public bool IsPopupVisible { get { return _isPopupVisible; } set { _isPopupVisible = value; OnPropertyChanged(); } }
 
         private string _popupTitle;
-        public string PopupTitle
-        {
-            get { return _popupTitle; }
-            set { _popupTitle = value; OnPropertyChanged(); }
-        }
+        public string PopupTitle { get { return _popupTitle; } set { _popupTitle = value; OnPropertyChanged(); } }
 
         private string _popupMessage;
-        public string PopupMessage
-        {
-            get { return _popupMessage; }
-            set { _popupMessage = value; OnPropertyChanged(); }
-        }
+        public string PopupMessage { get { return _popupMessage; } set { _popupMessage = value; OnPropertyChanged(); } }
 
-        public ICommand MoveCommand { get; }
+        // Exposing Data & Commands for XAML Bindings
+        public ObservableCollection<GameItem> QuickBar => Inventory.QuickBar;
+        public ObservableCollection<GameItem> FullInventory => Inventory.FullInventory;
+
+        public ICommand MoveCommand => Actions.MoveCommand;
+        public ICommand InteractCommand => Actions.InteractCommand;
+        public ICommand StopHidingCommand => Actions.StopHidingCommand;
+        public ICommand UseItemCommand => Inventory.UseItemCommand;
+        public ICommand EquipItemCommand => Inventory.EquipItemCommand;
+        public ICommand SelectQuickSlotCommand => Inventory.SelectQuickSlotCommand;
+
         public ICommand ToggleInventoryCommand { get; }
         public ICommand ClosePopupCommand { get; }
-        public ICommand InteractCommand { get; }
-        public ICommand LootItemCommand { get; }
-        public ICommand SelectQuickSlotCommand { get; }
 
         public MainViewModel()
         {
-            QuickBar = new ObservableCollection<GameItem>(new GameItem[5]);
+            _dbService = new DatabaseService();
+            StateManager = new GameStateManager();
 
-            FullInventory = new ObservableCollection<GameItem>();
-            EquipItemCommand = new RelayCommand<GameItem>(EquipItem);
+            // Initialize Systems
+            Inventory = new InventorySystem(this);
+            Actions = new ActionSystem(this);
 
-            MoveCommand = new RelayCommand<string>(Move);
             ToggleInventoryCommand = new RelayCommand<object>(_ => IsInventoryVisible = !IsInventoryVisible);
             ClosePopupCommand = new RelayCommand<object>(_ => IsPopupVisible = false);
-            InteractCommand = new RelayCommand<InteractableObject>(Interact);
-            LootItemCommand = new RelayCommand<GameItem>(LootItem);
-            SelectQuickSlotCommand = new RelayCommand<GameItem>(SelectQuickSlot);
-            UseItemCommand = new RelayCommand<GameItem>(UseItem);
 
-            if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
-            {
-                return;
-            }
+            if (DesignerProperties.GetIsInDesignMode(new DependencyObject())) return;
 
-            LoadGameWorld();
-            StartGameLoop();
+            LoadGameWorldAsync();
         }
 
-        private void LoadGameWorld()
+        private async void LoadGameWorldAsync()
         {
-            var db = new DyingFire.Services.DatabaseService();
-            _allLocations = db.LoadFullWorld();
-
-            if (_allLocations != null && _allLocations.Count > 0)
+            AllLocations = await _dbService.LoadFullWorldAsync();
+            if (AllLocations != null && AllLocations.Count > 0)
             {
-                CurrentLocation = _allLocations.FirstOrDefault(x => x.ID == 1);
+                CurrentLocation = AllLocations.FirstOrDefault(x => x.ID == 1);
+                BackgroundImage = CurrentLocation.ImagePath;
+                Audio.PlayBGM("/Assets/Audio/horrorAtmosphere.mp3");
+                StartGameLoop();
             }
         }
 
@@ -132,265 +112,21 @@ namespace DyingFire.ViewModels
 
         private void GameTimer_Tick(object sender, EventArgs e)
         {
-            if (CurrentLocation == null) return;
+            StateManager.Update();
 
-            if (CurrentLocation.IsDark)
-            {
-                Sanity = Math.Max(0, Sanity - 5);
-            }
-            else
-            {
-                Sanity = Math.Min(100, Sanity + 2);
-            }
+            if (StateManager.CurrentState is HidingState) return;
 
-            foreach (var loc in _allLocations)
-            {
-                if (loc.NoiseLevel > 0) loc.NoiseLevel--;
-            }
+            if (CurrentLocation != null && CurrentLocation.IsDark) Sanity = Math.Max(0, Sanity - 5);
+            else Sanity = Math.Min(100, Sanity + 2);
 
-            MoveMonsterAI();
+            IsParanormalActivityPresent = new Random().Next(100) < 20;
         }
 
-        private void MoveMonsterAI()
-        {
-            var monsterRoom = _allLocations.FirstOrDefault(x => x.ID == MonsterLocationID);
-            if (monsterRoom == null) return;
-
-            var adjacentIds = new List<int> { monsterRoom.LocationToNorth, monsterRoom.LocationToSouth, monsterRoom.LocationToEast, monsterRoom.LocationToWest };
-            adjacentIds.RemoveAll(id => id == -1);
-
-            var adjacentRooms = _allLocations.Where(x => adjacentIds.Contains(x.ID)).ToList();
-
-            var targetRoom = adjacentRooms.OrderByDescending(x => x.NoiseLevel).FirstOrDefault();
-
-            if (targetRoom != null && targetRoom.NoiseLevel > 0)
-            {
-                MonsterLocationID = targetRoom.ID;
-            }
-            else if (adjacentRooms.Count > 0)
-            {
-                Random rnd = new Random();
-                MonsterLocationID = adjacentRooms[rnd.Next(adjacentRooms.Count)].ID;
-            }
-
-            if (MonsterLocationID == CurrentLocation.ID)
-            {
-                TriggerJumpscare();
-            }
-        }
-
-        private void GenerateNoise(int sourceLocationId, int noiseLevel)
-        {
-            var sourceRoom = _allLocations.FirstOrDefault(x => x.ID == sourceLocationId);
-            if (sourceRoom == null) return;
-
-            sourceRoom.NoiseLevel = noiseLevel;
-
-            var adjacentIds = new List<int> { sourceRoom.LocationToNorth, sourceRoom.LocationToSouth, sourceRoom.LocationToEast, sourceRoom.LocationToWest };
-            foreach (var id in adjacentIds)
-            {
-                var adjRoom = _allLocations.FirstOrDefault(x => x.ID == id);
-                if (adjRoom != null && adjRoom.NoiseLevel < noiseLevel - 1)
-                {
-                    adjRoom.NoiseLevel = noiseLevel - 1;
-                }
-            }
-        }
-
-        private void TriggerJumpscare()
-        {
-            Vitality -= 50;
-            ShowMessage("YOU WERE CAUGHT", "The creature found you in the dark...");
-
-            MonsterLocationID = 1;
-        }
-        private void ShowMessage(string title, string message)
+        public void ShowMessage(string title, string message)
         {
             PopupTitle = title;
             PopupMessage = message;
             IsPopupVisible = true;
-        }
-
-        private void Move(string direction)
-        {
-            if (CurrentLocation == null) return;
-
-            int newLocID = -1;
-
-            if (direction == "North") newLocID = CurrentLocation.LocationToNorth;
-            else if (direction == "South") newLocID = CurrentLocation.LocationToSouth;
-            else if (direction == "East") newLocID = CurrentLocation.LocationToEast;
-            else if (direction == "West") newLocID = CurrentLocation.LocationToWest;
-
-            if (newLocID != -1)
-            {
-                var newRoom = _allLocations.FirstOrDefault(x => x.ID == newLocID);
-                if (newRoom != null)
-                {
-                    CurrentLocation = newRoom;
-                    GenerateNoise(CurrentLocation.ID, 2);
-                }
-                IsPopupVisible = false;
-                if (FullInventory.Any(i => i.Name == "Spirit Box"))
-                {
-                    Random r = new Random();
-                    if (r.Next(100) < 20)
-                    {
-                        ShowMessage("CHILLING SOUND", "The Spirit Box in your bag suddenly crackles with loud static...");
-                        GenerateNoise(CurrentLocation.ID, 2);
-                    }
-                }
-            }
-        }
-
-        private void Interact(InteractableObject obj)
-        {
-            if (obj == null) return;
-
-            if (obj.IsLocked)
-            {
-                var activeItem = QuickBar.FirstOrDefault(x => x != null && x.IsSelected);
-                if (activeItem != null && activeItem.Name == obj.RequiredItem)
-                {
-                    obj.IsLocked = false;
-                    GenerateNoise(CurrentLocation.ID, 3);
-
-                    if (obj.TargetLocationID > 0)
-                    {
-                        var teleportRoom = _allLocations.FirstOrDefault(x => x.ID == obj.TargetLocationID);
-                        if (teleportRoom != null)
-                        {
-                            CurrentLocation = teleportRoom;
-                            ShowMessage("UNLOCKED", "You used the " + activeItem.Name + " to unlock the door and walked through.");
-                            return;
-                        }
-                    }
-
-                    ShowMessage("UNLOCKED", "You used the " + activeItem.Name + " to unlock the " + obj.Name + ".");
-                }
-                else
-                {
-                    ShowMessage("LOCKED", obj.LockedMessage);
-                    GenerateNoise(CurrentLocation.ID, 1);
-                }
-                return;
-            }
-
-            if (obj.TargetLocationID > 0)
-            {
-                var teleportRoom = _allLocations.FirstOrDefault(x => x.ID == obj.TargetLocationID);
-                if (teleportRoom != null) CurrentLocation = teleportRoom;
-                IsPopupVisible = false;
-                return;
-            }
-
-            if (obj.ItemsInside.Count > 0)
-            {
-                string foundItems = "";
-                foreach (var item in obj.ItemsInside)
-                {
-                    if (string.IsNullOrEmpty(item.Lore))
-                        item.Lore = "An object found abandoned in the dark. Its origins are unknown, but it feels cold to the touch.";
-
-                    FullInventory.Add(item);
-                    foundItems += item.Name + "\n";
-                }
-                obj.ItemsInside.Clear();
-                GenerateNoise(CurrentLocation.ID, 3);
-                ShowMessage("ITEM FOUND", "Added to Inventory:\n\n" + foundItems);
-            }
-            else
-            {
-                ShowMessage("EMPTY", "The " + obj.Name + " is empty.");
-            }
-        }
-
-
-        private void LootItem(GameItem item)
-        {
-            if (item == null) return;
-            CurrentLocation.RoomItems.Remove(item);
-
-            for (int i = 0; i < QuickBar.Count; i++)
-            {
-                if (QuickBar[i] == null)
-                {
-                    QuickBar[i] = item;
-                    break;
-                }
-            }
-            ShowMessage("ITEM FOUND", "You picked up: " + item.Name);
-        }
-
-        private void UseItem(GameItem item)
-        {
-            if (item == null) return;
-
-            if (item.Name == "Spirit Box")
-            {
-                string[] clues = {
-            "STATIC... 'stay in the light'... STATIC",
-            "STATIC... 'it hates the noise but hunts by it'... STATIC",
-            "STATIC... 'the library... it sleeps there'... STATIC"
-        };
-                Random r = new Random();
-                ShowMessage("SPIRIT BOX", clues[r.Next(clues.Length)]);
-
-                // Using the spirit box makes noise, which attracts the monster!
-                GenerateNoise(CurrentLocation.ID, 4);
-            }
-            else if (item.Type == ItemType.Clue)
-            {
-                // If it's a note, using it just reads it again
-                ShowMessage("READING", item.Lore);
-            }
-            else
-            {
-                ShowMessage("USE", "You can't use that right now.");
-            }
-        }
-
-        private void EquipItem(GameItem item)
-        {
-            if (item == null) return;
-
-            if (QuickBar.Contains(item))
-            {
-                for (int i = 0; i < QuickBar.Count; i++)
-                {
-                    if (QuickBar[i] == item)
-                    {
-                        QuickBar[i] = null;
-                        item.IsSelected = false;
-                        return;
-                    }
-                }
-            }
-
-            for (int i = 0; i < QuickBar.Count; i++)
-            {
-                if (QuickBar[i] == null)
-                {
-                    QuickBar[i] = item;
-                    return;
-                }
-            }
-
-            ShowMessage("QUICKBAR FULL", "Your quickbar is full. You must unequip an item first.");
-        }
-
-        private void SelectQuickSlot(GameItem item)
-        {
-            if (item == null) return;
-
-            foreach (var slotItem in QuickBar)
-            {
-                if (slotItem != null)
-                {
-                    slotItem.IsSelected = false;
-                }
-            }
-            item.IsSelected = true;
         }
     }
 }

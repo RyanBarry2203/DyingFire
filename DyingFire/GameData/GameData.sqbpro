@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="GameData.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="1916"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="GameItems" custom_title="0" dock_id="1" table="4,9:mainGameItems"/><dock_state state="000000ff00000000fd00000001000000020000000000000000fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000010700ffffff000000000000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="SQL 1*">DELETE FROM &quot;Locations&quot;;
+DELETE FROM &quot;Interactables&quot;;
+DELETE FROM &quot;GameItems&quot;;
+
+-- 2. Insert all 15 Locations from your screenshot
+INSERT INTO &quot;Locations&quot; (&quot;ID&quot;, &quot;Name&quot;, &quot;ImagePath&quot;, &quot;Description&quot;, &quot;NoiseLevel&quot;, &quot;IsDark&quot;, &quot;NorthID&quot;, &quot;EastID&quot;, &quot;SouthID&quot;, &quot;WestID&quot;) VALUES 
+(1, 'Cell', '/Assets/Images/Cell.png', 'A cold, damp cell. This is where you woke up.', 0, 0, 2, -1, -1, -1),
+(2, 'Hallway', '/Assets/Images/hallway.png', 'A long, dreary hallway.', 0, 0, 4, -1, 1, 13),
+(3, 'Stairs', '/Assets/Images/Stairs.png', 'A set of stairs leading up into the darkness.', 0, 0, 5, -1, 14, 2),
+(4, 'Room 2', '/Assets/Images/room2.png', 'An abandoned room.', 0, 0, -1, -1, 2, -1),
+(5, 'Fella on the Stairs', '/Assets/Images/fellaOnTheStairs.png', 'There is someone... or something... here.', 0, 0, -1, -1, 6, -1),
+(6, 'Dark Spooky Hallway', '/Assets/Images/darkSpookyHallway.png', 'It is pitch black. You feel your sanity draining.', 0, 1, 9, 8, -1, 7),
+(7, 'Another Bedroom', '/Assets/Images/AnotherBedroom.png', 'A ruined bedroom.', 0, 0, 15, 6, -1, -1),
+(8, 'Library', '/Assets/Images/Library.png', 'Books are scattered everywhere. You hear breathing.', 0, 0, -1, -1, -1, 6),
+(9, 'JumpScare Frame 1', '/Assets/Images/JumpScareFrame1.png', 'AHHH!', 0, 0, 10, -1, 6, -1),
+(10, 'JumpScare Frame 2', '/Assets/Images/jumpScareFrame2.png', 'AHHH!', 0, 0, 11, -1, 9, -1),
+(11, 'Yellow Hallway Shadow', '/Assets/Images/yellowHallwayShadow.png', 'A sickly yellow light casts long shadows.', 0, 0, 12, 8, 10, 8),
+(12, 'Scary Mirror', '/Assets/Images/scaryMirror.png', 'Your reflection doesn''t look quite right.', 0, 0, -1, -1, 11, -1),
+(13, 'Dining Room', '/Assets/Images/diningRoom.png', 'A dusty dining room.', 0, 0, -1, 2, -1, -1),
+(14, 'Boiler Room', '/Assets/Images/boilerRoom.png', 'It is sweltering hot in here.', 0, 0, 3, -1, -1, -1),
+(15, 'Nursery', '/Assets/Images/nursery.png', 'A chillingly quiet nursery.', 0, 0, -1, -1, 7, -1);
+
+-- 3. Insert all 6 Interactables from your screenshot
+-- Note: Nursery Dresser (ID 6) has CanHideInside set to 1!
+INSERT INTO &quot;Interactables&quot; (&quot;ID&quot;, &quot;Name&quot;, &quot;X&quot;, &quot;Y&quot;, &quot;Width&quot;, &quot;Height&quot;, &quot;IsLocked&quot;, &quot;RequiredItem&quot;, &quot;LockedMessage&quot;, &quot;TargetLocationID&quot;, &quot;ParentLocationID&quot;, &quot;CanHideInside&quot;) VALUES 
+(1, 'Old Chest', 450, 400, 200, 120, 0, NULL, NULL, 0, 4, 0),
+(2, 'Stairwell Door', 720, 150, 160, 450, 1, 'Rusty Key', 'The door is locked tight.', 3, 2, 0),
+(3, 'Cell Mattress', 450, 500, 350, 150, 0, NULL, NULL, 0, 1, 0),
+(4, 'Dining Table', 250, 450, 500, 150, 0, NULL, NULL, 0, 13, 0),
+(5, 'Workbench', 100, 450, 300, 150, 0, NULL, NULL, 0, 14, 0),
+(6, 'Nursery Dresser', 150, 450, 300, 150, 0, NULL, NULL, 0, 15, 1);
+
+-- 4. Insert all 5 GameItems from your screenshot
+INSERT INTO &quot;GameItems&quot; (&quot;ID&quot;, &quot;Name&quot;, &quot;Description&quot;, &quot;ImagePath&quot;, &quot;Type&quot;, &quot;Lore&quot;, &quot;ParentLocationID&quot;, &quot;ParentInteractableID&quot;) VALUES 
+(1, 'Rusty Key', 'An old iron key. Might open a door nearby.', NULL, 0, NULL, NULL, 1),
+(2, 'Crumpled Note', 'A hastily written note.', NULL, 3, 'If anyone finds this, do not make a sound.', NULL, 3),
+(3, 'Investigator Journal', 'Torn page from a journal.', NULL, 3, 'The entity feeds on fear and tracks noise.', NULL, 4),
+(4, 'Heavy Wrench', 'A solid iron wrench.', NULL, 1, 'Covered in old, dried blood.', NULL, 5),
+(5, 'Spirit Box', 'A modified radio used to communicate with the dead.', NULL, 3, 'It emits a low hum.', NULL, 6);</sql><current_tab id="0"/></tab_sql></sqlb_project>
