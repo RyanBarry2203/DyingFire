@@ -32,5 +32,15 @@ namespace DyingFire.Models
         {
             ItemsInside = new ObservableCollection<GameItem>();
         }
+
+        public string ActionText
+        {
+            get
+            {
+                if (CanHideInside) return "Hide";
+                if (TargetLocationID > 0 || IsLocked) return "Interact";
+                return "Search";
+            }
+        }
     }
 }

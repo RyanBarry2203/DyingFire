@@ -177,20 +177,75 @@
                         </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Width="{Binding Width}" Height="{Binding Height}" Background="#33FF0000" BorderBrush="Red" BorderThickness="2" Cursor="None" 
-                                        Command="{Binding DataContext.InteractCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                <Button Width="{Binding Width}" Height="{Binding Height}" 
+            Command="{Binding DataContext.InteractCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+            CommandParameter="{Binding}"
+            Cursor="None" Background="Transparent" BorderThickness="0">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Grid Background="Transparent">
+                                                <Border x:Name="HoverPrompt" 
+                            Background="#E6050505" 
+                            BorderBrush="{StaticResource BronzeBorderBrush}" 
+                            BorderThickness="1" 
+                            CornerRadius="3" 
+                            HorizontalAlignment="Center" 
+                            VerticalAlignment="Center" 
+                            Padding="15,5"
+                            Opacity="0">
+                                                    <Border.Effect>
+                                                        <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="2"/>
+                                                    </Border.Effect>
+
+                                                    <TextBlock Text="{Binding ActionText}" 
+           Foreground="{StaticResource BoneBrush}" 
+           FontFamily="Gabriola" 
+           FontSize="28"/>
+
+                                                </Border>
+                                            </Grid>
+
+                                            <ControlTemplate.Triggers>
+                                               
+
+
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Trigger.EnterActions>
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetName="HoverPrompt" 
+                                                     Storyboard.TargetProperty="Opacity" 
+                                                     To="1" Duration="0:0:0.2"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </Trigger.EnterActions>
+                                                    <Trigger.ExitActions>
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Storyboard.TargetName="HoverPrompt" 
+                                                     Storyboard.TargetProperty="Opacity" 
+                                                     To="0" Duration="0:0:0.2"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </Trigger.ExitActions>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Content="▲" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="North"/>
-                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Content="▼" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="South"/>
-                    <Button HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="◀" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="West"/>
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="▶" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="East"/>
-                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,80" 
-        Content="Stop Hiding" Width="150" Height="45" Style="{StaticResource HorrorBtn}" 
-        Command="{Binding StopHidingCommand}"
-        Visibility="{Binding IsHidingUI, Converter={StaticResource BoolToVis}}"/>
+                    <Button Panel.ZIndex="100" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Content="▲" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="North" Visibility="{Binding CanMoveNorth, Converter={StaticResource BoolToVis}}"/>
+                    <Button Panel.ZIndex="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,20" Content="▼" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="South" Visibility="{Binding CanMoveSouth, Converter={StaticResource BoolToVis}}"/>
+                    <Button Panel.ZIndex="100" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0" Content="◄" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="West" Visibility="{Binding CanMoveWest, Converter={StaticResource BoolToVis}}"/>
+                    <Button Panel.ZIndex="100" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Content="►" Style="{StaticResource BronzeOrb}" Command="{Binding MoveCommand}" CommandParameter="East" Visibility="{Binding CanMoveEast, Converter={StaticResource BoolToVis}}"/>
+
+                    <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,30" 
+                            Content="Stop Hiding" Width="150" Height="45" Style="{StaticResource HorrorBtn}" 
+                            Command="{Binding StopHidingCommand}"
+                            Visibility="{Binding IsHidingUI, Converter={StaticResource BoolToVis}}"/>
                 </Grid>
             </Viewbox>
         </Grid>

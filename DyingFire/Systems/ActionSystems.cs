@@ -46,7 +46,7 @@ namespace DyingFire.Systems
 
             if (obj.CanHideInside)
             {
-                _vm.StateManager.PushState(new HidingState(_vm));
+                _vm.StateManager.PushState(new HidingState(_vm, obj));
                 return;
             }
 
@@ -59,6 +59,7 @@ namespace DyingFire.Systems
                     if (obj.TargetLocationID > 0)
                     {
                         _vm.CurrentLocation = _vm.AllLocations.FirstOrDefault(x => x.ID == obj.TargetLocationID) ?? _vm.CurrentLocation;
+                        _vm.BackgroundImage = _vm.CurrentLocation.ImagePath; 
                         _vm.ShowMessage("UNLOCKED", $"You used the {activeItem.Name} to unlock the door and walked through.");
                         return;
                     }
@@ -74,6 +75,7 @@ namespace DyingFire.Systems
             if (obj.TargetLocationID > 0)
             {
                 _vm.CurrentLocation = _vm.AllLocations.FirstOrDefault(x => x.ID == obj.TargetLocationID) ?? _vm.CurrentLocation;
+                _vm.BackgroundImage = _vm.CurrentLocation.ImagePath; 
                 return;
             }
 
@@ -83,6 +85,17 @@ namespace DyingFire.Systems
                 foreach (var item in obj.ItemsInside) _vm.Inventory.FullInventory.Add(item);
                 obj.ItemsInside.Clear();
                 _vm.ShowMessage("ITEM FOUND", "Added to Inventory:\n\n" + foundItems);
+            }
+            if (obj.ItemsInside.Count > 0)
+            {
+                string foundItems = string.Join("\n", obj.ItemsInside.Select(i => i.Name));
+                foreach (var item in obj.ItemsInside) _vm.Inventory.FullInventory.Add(item);
+                obj.ItemsInside.Clear();
+                _vm.ShowMessage("ITEM FOUND", "Added to Inventory:\n\n" + foundItems);
+            }
+            else if (obj.ActionText == "Search")
+            {
+                _vm.ShowMessage("EMPTY", $"You searched the {obj.Name} but found nothing useful.");
             }
         }
 

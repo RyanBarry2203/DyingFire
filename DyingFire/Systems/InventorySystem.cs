@@ -33,7 +33,14 @@ namespace DyingFire.Systems
         {
             if (item == null) return;
 
-            if (item.Name == "Spirit Box")
+            if (item.Name == "Sanity Pills")
+            {
+                _vm.Sanity = 100;
+                _vm.ShowMessage("RELIEF", "You swallowed the pills. Your heart rate slows down.");
+                FullInventory.Remove(item);
+                QuickBar[QuickBar.IndexOf(item)] = null;
+            }
+            else if (item.Name == "Spirit Box")
             {
                 if (_vm.IsParanormalActivityPresent)
                 {

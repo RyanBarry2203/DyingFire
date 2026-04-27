@@ -1,34 +1,39 @@
-﻿using DyingFire.ViewModels;
+﻿using DyingFire.Models;
+using DyingFire.ViewModels;
 
 namespace DyingFire.States
 {
     public class HidingState : IGameState
     {
         private MainViewModel _vm;
+        private InteractableObject _hidingSpot;
 
-        public HidingState(MainViewModel vm)
+        public HidingState(MainViewModel vm, InteractableObject hidingSpot)
         {
             _vm = vm;
+            _hidingSpot = hidingSpot;
         }
 
         public void Enter()
         {
-            // Scene Change & Audio
-            _vm.BackgroundImage = "/Assets/Images/insideFurnace.png";
-            _vm.Audio.PlayBGM("/Assets/Audio/heavyScaredBreathing.mp3");
+            string spotName = _hidingSpot.Name.ToLower();
 
-            // UI Update
+            if (spotName.Contains("boiler"))
+                _vm.BackgroundImage = "/Assets/Images/insideFurnace.png";
+            else if (spotName.Contains("bed"))
+                _vm.BackgroundImage = "/Assets/Images/undernuerserybed.png";
+            else if (spotName.Contains("chest"))
+                _vm.BackgroundImage = "/Assets/Images/insideChest.png";
+
+            _vm.Audio.PlayBGM("/Assets/Audio/heavyscaredbreathing.mp3");
             _vm.IsPopupVisible = false;
             _vm.IsHidingUI = true;
         }
 
         public void Exit()
         {
-            // Revert Scene & Audio
             _vm.BackgroundImage = _vm.CurrentLocation.ImagePath;
             _vm.Audio.PlayBGM("/Assets/Audio/horrorAtmosphere.mp3");
-
-            // UI Update
             _vm.IsHidingUI = false;
         }
 

@@ -15,6 +15,11 @@ namespace DyingFire.ViewModels
 {
     public class MainViewModel : ObservableObject
     {
+        public bool CanMoveNorth => CurrentLocation != null && CurrentLocation.LocationToNorth != -1 && !IsHidingUI;
+        public bool CanMoveEast => CurrentLocation != null && CurrentLocation.LocationToEast != -1 && !IsHidingUI;
+        public bool CanMoveSouth => CurrentLocation != null && CurrentLocation.LocationToSouth != -1 && !IsHidingUI;
+        public bool CanMoveWest => CurrentLocation != null && CurrentLocation.LocationToWest != -1 && !IsHidingUI;
+
         // Core Systems
         private DatabaseService _dbService;
         private DispatcherTimer _gameTimer;
@@ -33,13 +38,37 @@ namespace DyingFire.ViewModels
         public int Vitality { get { return _vitality; } set { _vitality = value; OnPropertyChanged(); } }
 
         private Location _currentLocation;
-        public Location CurrentLocation { get { return _currentLocation; } set { _currentLocation = value; OnPropertyChanged(); } }
+        public Location CurrentLocation
+        {
+            get { return _currentLocation; }
+            set
+            {
+                _currentLocation = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CanMoveNorth));
+                OnPropertyChanged(nameof(CanMoveEast));
+                OnPropertyChanged(nameof(CanMoveSouth));
+                OnPropertyChanged(nameof(CanMoveWest));
+            }
+        }
 
         private string _backgroundImage;
         public string BackgroundImage { get { return _backgroundImage; } set { _backgroundImage = value; OnPropertyChanged(); } }
 
         private bool _isHidingUI;
-        public bool IsHidingUI { get { return _isHidingUI; } set { _isHidingUI = value; OnPropertyChanged(); } }
+        public bool IsHidingUI
+        {
+            get { return _isHidingUI; }
+            set
+            {
+                _isHidingUI = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CanMoveNorth));
+                OnPropertyChanged(nameof(CanMoveEast));
+                OnPropertyChanged(nameof(CanMoveSouth));
+                OnPropertyChanged(nameof(CanMoveWest));
+            }
+        }
 
         public AudioService Audio { get; } = new AudioService();
 
