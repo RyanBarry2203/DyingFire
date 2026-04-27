@@ -2,12 +2,10 @@
 using DyingFire.Services;
 using DyingFire.States;
 using DyingFire.Systems;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
-using System.Windows.Threading;
 using System.ComponentModel;
 using System.Windows;
 
@@ -15,20 +13,18 @@ namespace DyingFire.ViewModels
 {
     public class MainViewModel : ObservableObject
     {
-        public bool CanMoveNorth => CurrentLocation != null && CurrentLocation.LocationToNorth != -1 && !IsHidingUI;
-        public bool CanMoveEast => CurrentLocation != null && CurrentLocation.LocationToEast != -1 && !IsHidingUI;
-        public bool CanMoveSouth => CurrentLocation != null && CurrentLocation.LocationToSouth != -1 && !IsHidingUI;
-        public bool CanMoveWest => CurrentLocation != null && CurrentLocation.LocationToWest != -1 && !IsHidingUI;
+        public bool IsMonsterEnabled { get; set; } = false;
 
-        // Core Systems
-        private DatabaseService _dbService;
-        private DispatcherTimer _gameTimer;
+        public DatabaseService DBService { get; }
         public GameStateManager StateManager { get; }
         public InventorySystem Inventory { get; }
         public ActionSystem Actions { get; }
+        public MonsterAIService MonsterAI { get; }
+        public GameLoopSystem GameLoop { get; }
+        public AudioService Audio { get; } = new AudioService();
 
-        //  Game Data
         public List<Location> AllLocations { get; set; }
+        public Dictionary<string, string> Config => DBService.Config;
         public bool IsParanormalActivityPresent { get; set; } = false;
 
         private int _sanity = 100;
@@ -41,15 +37,7 @@ namespace DyingFire.ViewModels
         public Location CurrentLocation
         {
             get { return _currentLocation; }
-            set
-            {
-                _currentLocation = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanMoveNorth));
-                OnPropertyChanged(nameof(CanMoveEast));
-                OnPropertyChanged(nameof(CanMoveSouth));
-                OnPropertyChanged(nameof(CanMoveWest));
-            }
+            set { _currentLocation = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanMoveNorth)); OnPropertyChanged(nameof(CanMoveEast)); OnPropertyChanged(nameof(CanMoveSouth)); OnPropertyChanged(nameof(CanMoveWest)); }
         }
 
         private string _backgroundImage;
@@ -59,20 +47,15 @@ namespace DyingFire.ViewModels
         public bool IsHidingUI
         {
             get { return _isHidingUI; }
-            set
-            {
-                _isHidingUI = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanMoveNorth));
-                OnPropertyChanged(nameof(CanMoveEast));
-                OnPropertyChanged(nameof(CanMoveSouth));
-                OnPropertyChanged(nameof(CanMoveWest));
-            }
+            set { _isHidingUI = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanMoveNorth)); OnPropertyChanged(nameof(CanMoveEast)); OnPropertyChanged(nameof(CanMoveSouth)); OnPropertyChanged(nameof(CanMoveWest)); }
         }
 
-        public AudioService Audio { get; } = new AudioService();
+        public bool CanMoveNorth => CurrentLocation != null && CurrentLocation.LocationToNorth != -1 && !IsHidingUI;
+        public bool CanMoveEast => CurrentLocation != null && CurrentLocation.LocationToEast != -1 && !IsHidingUI;
+        public bool CanMoveSouth => CurrentLocation != null && CurrentLocation.LocationToSouth != -1 && !IsHidingUI;
+        public bool CanMoveWest => CurrentLocation != null && CurrentLocation.LocationToWest != -1 && !IsHidingUI;
 
-        // UI State
+
         private GameItem _selectedInventoryItem;
         public GameItem SelectedInventoryItem { get { return _selectedInventoryItem; } set { _selectedInventoryItem = value; OnPropertyChanged(); } }
 
@@ -88,9 +71,9 @@ namespace DyingFire.ViewModels
         private string _popupMessage;
         public string PopupMessage { get { return _popupMessage; } set { _popupMessage = value; OnPropertyChanged(); } }
 
-        // Exposing Data & Commands for XAML Bindings
         public ObservableCollection<GameItem> QuickBar => Inventory.QuickBar;
         public ObservableCollection<GameItem> FullInventory => Inventory.FullInventory;
+
 
         public ICommand MoveCommand => Actions.MoveCommand;
         public ICommand InteractCommand => Actions.InteractCommand;
@@ -98,21 +81,25 @@ namespace DyingFire.ViewModels
         public ICommand UseItemCommand => Inventory.UseItemCommand;
         public ICommand EquipItemCommand => Inventory.EquipItemCommand;
         public ICommand SelectQuickSlotCommand => Inventory.SelectQuickSlotCommand;
-
         public ICommand ToggleInventoryCommand { get; }
         public ICommand ClosePopupCommand { get; }
 
         public MainViewModel()
         {
-            _dbService = new DatabaseService();
+            DBService = new DatabaseService();
             StateManager = new GameStateManager();
+            MonsterAI = new MonsterAIService();
 
-            // Initialize Systems
             Inventory = new InventorySystem(this);
             Actions = new ActionSystem(this);
+            GameLoop = new GameLoopSystem(this);
 
             ToggleInventoryCommand = new RelayCommand<object>(_ => IsInventoryVisible = !IsInventoryVisible);
-            ClosePopupCommand = new RelayCommand<object>(_ => IsPopupVisible = false);
+            ClosePopupCommand = new RelayCommand<object>(_ =>
+            {
+                if (PopupTitle == "GAME OVER") Application.Current.Shutdown();
+                else IsPopupVisible = false;
+            });
 
             if (DesignerProperties.GetIsInDesignMode(new DependencyObject())) return;
 
@@ -121,34 +108,16 @@ namespace DyingFire.ViewModels
 
         private async void LoadGameWorldAsync()
         {
-            AllLocations = await _dbService.LoadFullWorldAsync();
+            AllLocations = await DBService.LoadFullWorldAsync();
             if (AllLocations != null && AllLocations.Count > 0)
             {
                 CurrentLocation = AllLocations.FirstOrDefault(x => x.ID == 1);
                 BackgroundImage = CurrentLocation.ImagePath;
-                Audio.PlayBGM("/Assets/Audio/horrorAtmosphere.mp3");
-                StartGameLoop();
+
+                Audio.PlayBGM(Config["BGM_Main"]);
+
+                GameLoop.Start();
             }
-        }
-
-        private void StartGameLoop()
-        {
-            _gameTimer = new DispatcherTimer();
-            _gameTimer.Interval = TimeSpan.FromSeconds(3);
-            _gameTimer.Tick += GameTimer_Tick;
-            _gameTimer.Start();
-        }
-
-        private void GameTimer_Tick(object sender, EventArgs e)
-        {
-            StateManager.Update();
-
-            if (StateManager.CurrentState is HidingState) return;
-
-            if (CurrentLocation != null && CurrentLocation.IsDark) Sanity = Math.Max(0, Sanity - 5);
-            else Sanity = Math.Min(100, Sanity + 2);
-
-            IsParanormalActivityPresent = new Random().Next(100) < 20;
         }
 
         public void ShowMessage(string title, string message)

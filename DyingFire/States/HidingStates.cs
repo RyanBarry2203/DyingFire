@@ -1,5 +1,6 @@
 ﻿using DyingFire.Models;
 using DyingFire.ViewModels;
+using System.Collections.Generic;
 
 namespace DyingFire.States
 {
@@ -16,24 +17,16 @@ namespace DyingFire.States
 
         public void Enter()
         {
-            string spotName = _hidingSpot.Name.ToLower();
-
-            if (spotName.Contains("boiler"))
-                _vm.BackgroundImage = "/Assets/Images/insideFurnace.png";
-            else if (spotName.Contains("bed"))
-                _vm.BackgroundImage = "/Assets/Images/undernuerserybed.png";
-            else if (spotName.Contains("chest"))
-                _vm.BackgroundImage = "/Assets/Images/insideChest.png";
+            _vm.BackgroundImage = _hidingSpot.HidingImagePath ?? "/Assets/Images/hallway.png";
 
             _vm.Audio.PlayBGM("/Assets/Audio/heavyscaredbreathing.mp3");
             _vm.IsPopupVisible = false;
             _vm.IsHidingUI = true;
         }
-
         public void Exit()
         {
             _vm.BackgroundImage = _vm.CurrentLocation.ImagePath;
-            _vm.Audio.PlayBGM("/Assets/Audio/horrorAtmosphere.mp3");
+            _vm.Audio.PlayBGM("/Assets/Audio/dyingFireTrack.mp3"); // Return to main track
             _vm.IsHidingUI = false;
         }
 

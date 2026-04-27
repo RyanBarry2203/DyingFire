@@ -124,6 +124,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Factorys\GameFactory.cs" />
     <Compile Include="Interface\IInteractible.cs" />
     <Compile Include="Models\GameItem.cs" />
     <Compile Include="Models\GameState.cs" />
@@ -137,7 +138,10 @@
     <Compile Include="States\GameStateManager.cs" />
     <Compile Include="States\HidingStates.cs" />
     <Compile Include="States\IGameState.cs" />
+    <Compile Include="Strategies\Interaction\InteractionHandler.cs" />
+    <Compile Include="Strategies\ItemStrategies.cs" />
     <Compile Include="Systems\ActionSystems.cs" />
+    <Compile Include="Systems\GameLoopSystem.cs" />
     <Compile Include="Systems\InventorySystem.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="View\MainWindow.xaml.cs">
@@ -184,6 +188,9 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <Content Include="Assets\Audio\dyingFireTrack.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\Audio\heavyFootsteps.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

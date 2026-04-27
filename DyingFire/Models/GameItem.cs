@@ -14,6 +14,8 @@ namespace DyingFire.Models
         public string ImagePath { get; set; }
         public ItemType Type { get; set; }
 
+        public string UseMessage { get; set; }
+
         public bool IsSelected
         {
             get { return _isSelected; }

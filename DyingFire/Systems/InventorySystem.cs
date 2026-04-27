@@ -1,6 +1,7 @@
 ﻿using DyingFire.Models;
+using DyingFire.Strategies;
 using DyingFire.ViewModels;
-using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
@@ -10,6 +11,10 @@ namespace DyingFire.Systems
     public class InventorySystem
     {
         private MainViewModel _vm;
+
+        // Dictionary to map Item Types/Names to their specific behaviors
+        private readonly Dictionary<ItemType, IItemUsageStrategy> _typeStrategies;
+        private readonly Dictionary<string, IItemUsageStrategy> _specialItemStrategies;
 
         public ObservableCollection<GameItem> QuickBar { get; set; }
         public ObservableCollection<GameItem> FullInventory { get; set; }
@@ -24,6 +29,19 @@ namespace DyingFire.Systems
             QuickBar = new ObservableCollection<GameItem>(new GameItem[5]);
             FullInventory = new ObservableCollection<GameItem>();
 
+            _typeStrategies = new Dictionary<ItemType, IItemUsageStrategy>
+            {
+                { ItemType.Consumable, new ConsumableStrategy() },
+                { ItemType.Clue, new ClueStrategy() },
+                { ItemType.Key, new DefaultEquipStrategy() },
+                { ItemType.Weapon, new DefaultEquipStrategy() }
+            };
+
+            _specialItemStrategies = new Dictionary<string, IItemUsageStrategy>
+            {
+                { "Spirit Box", new SpiritBoxStrategy() }
+            };
+
             UseItemCommand = new RelayCommand<GameItem>(UseItem);
             EquipItemCommand = new RelayCommand<GameItem>(EquipItem);
             SelectQuickSlotCommand = new RelayCommand<GameItem>(SelectQuickSlot);
@@ -33,30 +51,21 @@ namespace DyingFire.Systems
         {
             if (item == null) return;
 
-            if (item.Name == "Sanity Pills")
+            if (_specialItemStrategies.TryGetValue(item.Name, out var specialStrategy))
             {
-                _vm.Sanity = 100;
-                _vm.ShowMessage("RELIEF", "You swallowed the pills. Your heart rate slows down.");
-                FullInventory.Remove(item);
-                QuickBar[QuickBar.IndexOf(item)] = null;
+                specialStrategy.Use(item, _vm);
             }
-            else if (item.Name == "Spirit Box")
+            else if (_typeStrategies.TryGetValue(item.Type, out var typeStrategy))
             {
-                if (_vm.IsParanormalActivityPresent)
-                {
-                    string[] clues = { "STATIC... 'stay in the light'... STATIC", "STATIC... 'it hunts by noise'... STATIC" };
-                    _vm.ShowMessage("SPIRIT BOX", clues[new Random().Next(clues.Length)]);
-                    _vm.IsParanormalActivityPresent = false;
-                }
-                else
-                {
-                    _vm.ShowMessage("SPIRIT BOX", "*Just empty static... nothing is here right now.*");
-                }
+                typeStrategy.Use(item, _vm);
             }
-            else if (item.Type == ItemType.Clue)
-            {
-                _vm.ShowMessage("READING", item.Lore);
-            }
+        }
+
+        public void RemoveItem(GameItem item)
+        {
+            FullInventory.Remove(item);
+            int index = QuickBar.IndexOf(item);
+            if (index >= 0) QuickBar[index] = null;
         }
 
         private void EquipItem(GameItem item)

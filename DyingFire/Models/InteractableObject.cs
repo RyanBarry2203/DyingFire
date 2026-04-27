@@ -23,7 +23,7 @@ namespace DyingFire.Models
         public string LockedMessage { get; set; } = "It's locked.";
         public int TargetLocationID { get; set; } = 0;
 
-        // NEW: Hiding Mechanic
+        public string HidingImagePath { get; set; }
         public bool CanHideInside { get; set; } = false;
 
         public ObservableCollection<GameItem> ItemsInside { get; set; }
